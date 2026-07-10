@@ -1,0 +1,494 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth (Auth.js) + platform users
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  passwordHash  String? // password fallback; magic link is primary
+  isSuperAdmin  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  memberships VenueMember[]
+  auditLogs   AuditLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy
+// ---------------------------------------------------------------------------
+
+enum VenueRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum PlanTier {
+  TRIAL
+  SOLO // $49 — 1 space
+  GROWTH // $99 — up to 5 spaces
+  PRO // $199 — up to 10 spaces
+}
+
+model Venue {
+  id       String @id @default(cuid())
+  slug     String @unique
+  name     String
+  timezone String @default("America/New_York")
+  currency String @default("usd")
+
+  // Contact & address
+  email        String?
+  phone        String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  region       String?
+  postalCode   String?
+  country      String  @default("US")
+
+  // Branding
+  description String?
+  logoUrl     String?
+  photos      Json    @default("[]") // string[]
+  brandColor  String  @default("#4f46e5")
+
+  // Operating hours: [{dow: 0-6, open: "09:00", close: "23:00", closed: bool}]
+  operatingHours Json @default("[]")
+
+  // Policies
+  // cancellationTiers: [{minDaysBefore: 60, refundPct: 100}, ...] sorted desc
+  cancellationTiers   Json    @default("[{\"minDaysBefore\":60,\"refundPct\":100},{\"minDaysBefore\":30,\"refundPct\":50},{\"minDaysBefore\":0,\"refundPct\":0}]")
+  depositPct          Int     @default(30) // % of total due at confirmation
+  balanceDueDays      Int     @default(14) // balance due N days before event
+  securityDepositCents Int    @default(0) // default refundable caution deposit
+  autoChargeBalance   Boolean @default(false) // else payment-link reminder
+  houseRules          String? // noise limits, end times, etc.
+  taxBps              Int     @default(0) // tax in basis points (750 = 7.5%)
+
+  // Stripe Connect
+  stripeAccountId    String?
+  stripeChargesEnabled Boolean @default(false)
+
+  // SaaS billing
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  planTier             PlanTier  @default(TRIAL)
+  trialEndsAt          DateTime?
+
+  onboardingStep Int     @default(0) // wizard progress; 99 = complete
+  published      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      VenueMember[]
+  spaces       Space[]
+  addOns       AddOn[]
+  clients      Client[]
+  bookings     Booking[]
+  payments     Payment[]
+  quotes       Quote[]
+  tourRequests TourRequest[]
+  auditLogs    AuditLog[]
+}
+
+model VenueMember {
+  id      String    @id @default(cuid())
+  venueId String
+  userId  String
+  role    VenueRole @default(STAFF)
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Spaces, rates, add-ons
+// ---------------------------------------------------------------------------
+
+model Space {
+  id      String @id @default(cuid())
+  venueId String
+
+  name             String
+  description      String?
+  photos           Json    @default("[]") // string[]
+  seatedCapacity   Int     @default(0)
+  standingCapacity Int     @default(0)
+  floorAreaSqm     Int?
+  amenities        Json    @default("[]") // string[]
+  // layouts: [{name: "Banquet", capacity: 200}]
+  layouts          Json    @default("[]")
+  color            String  @default("#4f46e5") // calendar color
+  sortOrder        Int     @default(0)
+
+  setupBufferMins    Int     @default(60)
+  teardownBufferMins Int     @default(60)
+  instantBook        Boolean @default(false) // false = inquiry-first
+  active             Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  ratePlan RatePlan?
+  bookings Booking[]
+
+  @@index([venueId])
+}
+
+model RatePlan {
+  id      String @id @default(cuid())
+  spaceId String @unique
+
+  hourlyRateCents    Int
+  minBookingHours    Int  @default(2)
+  halfDayCents       Int?
+  halfDayHours       Int  @default(5)
+  fullDayCents       Int?
+  fullDayHours       Int  @default(12)
+  eveningCents       Int?
+  eveningHours       Int  @default(6)
+  eveningStartHour   Int  @default(17) // earliest start for evening package
+  overtimeHourlyCents Int? // per extra hour beyond package; falls back to hourly
+
+  // index 0 = Sunday ... 6 = Saturday; 100 = x1.0, 125 = x1.25
+  dowMultipliers Json @default("[100,100,100,100,100,125,125]")
+
+  peakPeriods PeakPeriod[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+}
+
+model PeakPeriod {
+  id         String @id @default(cuid())
+  ratePlanId String
+
+  name          String // "December peak"
+  startDate     String // "2025-12-15" (venue-local calendar date)
+  endDate       String // "2025-12-31" inclusive
+  multiplierPct Int // 140 = +40%
+
+  ratePlan RatePlan @relation(fields: [ratePlanId], references: [id], onDelete: Cascade)
+
+  @@index([ratePlanId])
+}
+
+enum AddOnPricing {
+  PER_UNIT
+  FLAT
+}
+
+model AddOn {
+  id      String @id @default(cuid())
+  venueId String
+
+  name        String
+  description String?
+  priceCents  Int
+  pricingType AddOnPricing @default(FLAT)
+  maxQuantity Int?
+  active      Boolean      @default(true)
+  sortOrder   Int          @default(0)
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
+}
+
+// ---------------------------------------------------------------------------
+// Clients & bookings
+// ---------------------------------------------------------------------------
+
+model Client {
+  id      String @id @default(cuid())
+  venueId String
+
+  name         String
+  email        String?
+  phone        String?
+  organization String?
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([venueId])
+  @@index([venueId, phone])
+  @@index([venueId, email])
+}
+
+enum EventType {
+  WEDDING
+  BIRTHDAY
+  CONFERENCE
+  CHURCH_PROGRAM
+  CORPORATE
+  OTHER
+}
+
+enum BookingStatus {
+  INQUIRY // does not block
+  QUOTE_SENT // does not block
+  HOLD // 15-min online-checkout hold — blocks until holdExpiresAt
+  PENCILED // owner-granted soft hold — blocks until holdExpiresAt
+  CONFIRMED // blocks
+  COMPLETED // blocks (historical)
+  CANCELLED // does not block
+  NO_SHOW // blocks (historical)
+  EXPIRED // released hold — does not block
+}
+
+enum BookingSource {
+  ONLINE
+  PHONE
+  WHATSAPP
+  WALK_IN
+}
+
+enum SlotType {
+  HOURLY
+  HALF_DAY
+  FULL_DAY
+  EVENING
+}
+
+model Booking {
+  id       String @id @default(cuid())
+  venueId  String
+  spaceId  String
+  clientId String
+
+  status    BookingStatus @default(INQUIRY)
+  source    BookingSource @default(PHONE)
+  eventType EventType     @default(OTHER)
+  slotType  SlotType      @default(HOURLY)
+
+  // Event time: [start, end) half-open, UTC instants
+  start DateTime
+  end   DateTime
+
+  // Buffers snapshot (mins) + the blocked interval they produce.
+  // blocked = [start - setupBufferMins, end + teardownBufferMins)
+  // A generated tstzrange + GiST exclusion constraint on these columns is
+  // added in a raw SQL migration — Prisma can't express it.
+  setupBufferMins    Int @default(0)
+  teardownBufferMins Int @default(0)
+  blockedStart       DateTime
+  blockedEnd         DateTime
+
+  guestCount Int    @default(0)
+  layout     String?
+
+  // Immutable price snapshot — never recompute historical prices.
+  // lineItems: [{kind, label, qty, unitCents, totalCents}]
+  lineItems     Json @default("[]")
+  subtotalCents Int  @default(0)
+  taxCents      Int  @default(0)
+  totalCents    Int  @default(0)
+
+  depositCents         Int       @default(0)
+  balanceDueDate       DateTime?
+  securityDepositCents Int       @default(0)
+
+  holdExpiresAt DateTime? // HOLD (15 min) and PENCILED ("held until Friday")
+  manageToken   String    @unique @default(cuid()) // signed-link lookup
+
+  notes       String?
+  setupDone   Boolean   @default(false)
+  eventDone   Boolean   @default(false)
+  cancelledAt DateTime?
+  cancelReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  space    Space     @relation(fields: [spaceId], references: [id])
+  client   Client    @relation(fields: [clientId], references: [id])
+  payments Payment[]
+  quote    Quote?
+
+  @@index([venueId, start])
+  @@index([spaceId, blockedStart, blockedEnd])
+  @@index([venueId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Payments & quotes
+// ---------------------------------------------------------------------------
+
+enum PaymentType {
+  BOOKING_DEPOSIT
+  BALANCE
+  SECURITY_DEPOSIT
+  SECURITY_REFUND
+  REFUND
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id        String @id @default(cuid())
+  venueId   String
+  bookingId String
+
+  type        PaymentType
+  status      PaymentStatus @default(PENDING)
+  amountCents Int
+  currency    String        @default("usd")
+
+  stripeCheckoutSessionId String? @unique
+  stripePaymentIntentId   String?
+  stripeRefundId          String?
+  applicationFeeCents     Int     @default(0)
+  reason                  String? // e.g. security-deposit deduction reason
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue   Venue   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
+  @@index([bookingId])
+}
+
+model Quote {
+  id        String @id @default(cuid())
+  venueId   String
+  bookingId String @unique
+
+  number     Int
+  validUntil DateTime
+  terms      String?
+  token      String   @unique @default(cuid())
+  sentAt     DateTime?
+  acceptedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  venue   Venue   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, number])
+}
+
+// ---------------------------------------------------------------------------
+// Tours, webhooks, audit
+// ---------------------------------------------------------------------------
+
+enum TourStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+model TourRequest {
+  id      String  @id @default(cuid())
+  venueId String
+  spaceId String?
+
+  name        String
+  email       String
+  phone       String?
+  requestedAt DateTime // 30-min viewing slot start
+  status      TourStatus @default(PENDING)
+  notes       String?
+
+  createdAt DateTime @default(now())
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, requestedAt])
+}
+
+// Stripe webhook idempotency ledger
+model WebhookEvent {
+  id          String   @id // Stripe event id
+  type        String
+  processedAt DateTime @default(now())
+}
+
+model AuditLog {
+  id          String  @id @default(cuid())
+  actorUserId String?
+  venueId     String?
+  action      String // e.g. "IMPERSONATE", "BOOKING_CANCELLED"
+  meta        Json    @default("{}")
+
+  createdAt DateTime @default(now())
+
+  actor User?  @relation(fields: [actorUserId], references: [id])
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, createdAt])
+}
