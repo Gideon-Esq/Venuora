@@ -13,21 +13,47 @@ Tailwind CSS · Vitest. Single app, deployed on Vercel.
 ## Quick start
 
 ```bash
-# 1. Postgres (local dev)
-docker run -d --name venuora-pg -e POSTGRES_PASSWORD=venuora \
-  -e POSTGRES_DB=venuora -p 5432:5432 postgres:16
-
-# 2. Install, migrate, seed the demo venue
+# 1. Configure .env with your Supabase PostgreSQL connection (see below)
+# 2. Install and apply the existing migrations
 npm install
-cp .env.example .env   # fill in secrets, or keep placeholders for dev mode
-npx prisma migrate dev
-npm run db:seed
+npm run db:deploy
 
 # 3. Run
 npm run dev
 ```
 
-Then open:
+### Supabase database
+
+The app uses Supabase PostgreSQL through the existing Prisma client. In the
+Supabase dashboard, open **Connect**, select **Session pooler**, and copy the
+PostgreSQL URI into `DATABASE_URL` in the root `.env`. Replace the password
+placeholder with your database password (URL-encode special characters).
+
+```dotenv
+DATABASE_URL="postgresql://postgres.PROJECT_REF:ENCODED_PASSWORD@POOLER_HOST:5432/postgres"
+# Optional: direct or session-pooler URI for migrations when runtime uses a transaction pooler.
+DIRECT_URL="postgresql://postgres.PROJECT_REF:ENCODED_PASSWORD@POOLER_HOST:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL="https://PROJECT_REF.supabase.co"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="YOUR_PUBLISHABLE_KEY"
+```
+
+Copy the actual host and username from your project's Connect panel. The public
+Supabase URL and publishable key are API credentials; they do not replace the
+PostgreSQL connection string. Runtime queries use `DATABASE_URL`; Prisma CLI
+uses `DIRECT_URL` when supplied, otherwise `DATABASE_URL`. Keep database
+credentials server-only. Auth.js continues to handle login.
+
+`npm run db:deploy` applies the committed migrations, including the database
+constraint that prevents overlapping bookings. Use migrations rather than
+`prisma db push` to preserve that constraint. Restart the dev server after
+changing `.env`.
+
+For an empty development database only, `npm run db:seed` creates the demo
+accounts and venue below. **The seed deletes existing application data.**
+Skip it for a database containing real data. Switching connection strings does
+not transfer records from the former local database.
+
+After seeding an empty development database, open:
 
 - **Public demo page:** http://localhost:3000/v/regency-event-center
 - **Owner dashboard:** http://localhost:3000/login — `owner@regency.demo` / `demo1234`
@@ -98,3 +124,16 @@ tests/             vitest unit + Postgres integration tests
 `/api/cron/daily` (Vercel Cron, `vercel.json`): balance reminders (14 & 3 days
 before due), event-week logistics emails, hold-expiry sweep, auto-completing
 past events (thank-you + security-refund notices). Set `CRON_SECRET` in prod.
+
+## Image uploads
+
+Venue logos, venue photos and space photos support file uploads to Vercel Blob.
+Create and connect a public Blob store, set the server-only `BLOB_READ_WRITE_TOKEN`,
+then restart locally or redeploy. See [the setup and verification guide](docs/vercel-blob-setup.md).
+
+## Email delivery
+
+Nodemailer SMTP is available for booking emails and sign-in links. Fill `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `EMAIL_FROM` in `.env`.
+See [SMTP setup](docs/smtp-email-setup.md). Without SMTP, existing Resend / local
+console delivery remains available.

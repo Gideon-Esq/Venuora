@@ -1,33 +1,98 @@
 @import "tailwindcss";
 
+/*
+ * Venuora Indigo — design tokens (light, base radius 0.5rem).
+ * Components use the semantic names (bg-primary, text-muted-foreground,
+ * border-border …) rather than raw palette colours.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f9f7f0;
+  --foreground: #1b1a22;
+  --card: #fdfcf7;
+  --card-foreground: #1b1a22;
+  --primary: #5145ae;
+  --primary-hover: #463b9a;
+  --primary-foreground: #ffffff;
+  --secondary: #e6ebf6;
+  --secondary-foreground: #262a3b;
+  --accent: #dfe0fb;
+  --accent-foreground: #3b3191;
+  --muted: #f1ede3;
+  --muted-foreground: #5f5c68;
+  --destructive: #c62d2f;
+  --destructive-foreground: #ffffff;
+  --border: #dcdfe6;
+  --input: #d3d7e0;
+  --ring: #5145ae;
+  --sidebar: #eceefa;
+  --success: #17794a;
+  --success-soft: #e3f3ea;
+  --warning: #8a4b0f;
+  --warning-soft: #fdf5e4;
+  --warning-border: #efdcae;
+  --danger-soft: #f8e9e5;
+  --radius: 0.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-danger-soft: var(--danger-soft);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* The product is designed light-only; never inherit an OS dark palette. */
+:root {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, Arial,
-    Helvetica, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-feature-settings: "cv11", "ss01";
 }
 
-/* Public pages render on a light canvas regardless of OS scheme. */
+/* Public (venue-branded) pages share the same warm canvas. */
 .public-page {
-  background: #fafafa; /* zinc-50 */
-  color: #18181b; /* zinc-900 */
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

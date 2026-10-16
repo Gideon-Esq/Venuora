@@ -26,9 +26,13 @@ export async function inviteMemberAction(slug: string, formData: FormData) {
     create: { email: email.data },
   });
 
+  const existingMembership = await db.venueMember.findUnique({where:{venueId_userId:{venueId:venue.id,userId:user.id}}});
+  if (existingMembership) return {ok:false as const,error:"This person already has access. Adding a person does not change an existing role."};
+
   await db.venueMember.upsert({
     where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: { role: role.data },
+    // A concurrent add must never overwrite an existing membership role.
+    update: {},
     create: { venueId: venue.id, userId: user.id, role: role.data },
   });
 

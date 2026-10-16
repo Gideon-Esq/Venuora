@@ -1,0 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
+export default function BookingLoading() {
+  return <main role="status" aria-busy="true" className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8"><span className="sr-only">Loading booking availability…</span><Skeleton className="h-8 w-64 max-w-full" /><div className="grid grid-cols-5 gap-2">{[1,2,3,4,5].map(i=><Skeleton key={i} className="h-2 w-full" />)}</div><div className="rounded-xl border border-border bg-card p-5"><Skeleton className="mb-5 h-6 w-40" /><div className="grid grid-cols-7 gap-2">{Array.from({length:35},(_,i)=><Skeleton key={i} className="h-10 w-full" />)}</div><div className="mt-6 grid grid-cols-2 gap-4"><Skeleton className="h-11" /><Skeleton className="h-11" /></div><Skeleton className="mt-5 h-11 w-full" /></div></main>;
+}

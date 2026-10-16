@@ -40,9 +40,9 @@ export function PolicySummary({
   cancellationTiers: CancellationTier[];
 }) {
   return (
-    <div className="space-y-4 text-sm leading-6 text-zinc-700">
+    <div className="space-y-4 text-sm leading-6 text-foreground/85">
       <div>
-        <h4 className="font-medium text-zinc-900">Payments</h4>
+        <h4 className="font-medium text-foreground">Payments</h4>
         <ul className="mt-1 list-disc space-y-1 pl-5">
           <li>
             A {depositPct}% deposit confirms your booking; the balance is due{" "}
@@ -61,7 +61,7 @@ export function PolicySummary({
         </ul>
       </div>
       <div>
-        <h4 className="font-medium text-zinc-900">Cancellations</h4>
+        <h4 className="font-medium text-foreground">Cancellations</h4>
         <ul className="mt-1 list-disc space-y-1 pl-5">
           {cancellationSentences(cancellationTiers).map((s) => (
             <li key={s}>{s}</li>

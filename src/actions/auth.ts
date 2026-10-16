@@ -43,7 +43,14 @@ export async function passwordSignInAction(formData: FormData): Promise<ActionRe
   try {
     await signIn("credentials", { email, password, redirect: false });
   } catch (err) {
-    if (err instanceof AuthError) return { ok: false, error: "Invalid email or password" };
+    if (err instanceof AuthError) {
+      return {
+        ok: false,
+        error: err.type === "CredentialsSignin"
+          ? "Invalid email or password"
+          : "Sign-in is temporarily unavailable. Please try again shortly.",
+      };
+    }
     throw err;
   }
   redirect("/app");
@@ -58,7 +65,7 @@ export async function magicLinkAction(formData: FormData): Promise<ActionResult>
     if (err instanceof AuthError) return { ok: false, error: "Could not send the magic link" };
     throw err;
   }
-  redirect("/login/check-email");
+  redirect(`/login/check-email?email=${encodeURIComponent(email)}`);
 }
 
 export async function signOutAction(): Promise<void> {

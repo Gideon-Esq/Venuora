@@ -63,12 +63,12 @@ export default async function BillingSettingsPage({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-zinc-600">Current plan:</span>
-            <Badge className="bg-indigo-100 text-indigo-700">
+            <span className="text-muted-foreground">Current plan:</span>
+            <Badge className="bg-accent text-accent-foreground">
               {TIER_LABELS[venue.planTier] ?? venue.planTier}
             </Badge>
             {venue.planTier === "TRIAL" && venue.trialEndsAt && (
-              <span className="text-zinc-500">
+              <span className="text-muted-foreground">
                 Trial ends {formatInVenueTz(venue.trialEndsAt, venue.timezone, "EEE, MMM d yyyy")}.
               </span>
             )}
@@ -83,19 +83,19 @@ export default async function BillingSettingsPage({
                   key={plan.tier}
                   className={
                     isCurrent
-                      ? "rounded-xl border-2 border-indigo-600 p-4"
-                      : "rounded-xl border border-zinc-200 p-4"
+                      ? "rounded-xl border-2 border-primary p-4"
+                      : "rounded-xl border border-border p-4"
                   }
                 >
                   <div className="flex items-baseline justify-between">
-                    <h3 className="font-semibold text-zinc-900">{plan.name}</h3>
+                    <h3 className="font-semibold text-foreground">{plan.name}</h3>
                     <p>
-                      <span className="text-xl font-bold text-zinc-900">{plan.price}</span>
-                      <span className="text-xs text-zinc-500">/mo</span>
+                      <span className="text-xl font-bold text-foreground">{plan.price}</span>
+                      <span className="text-xs text-muted-foreground">/mo</span>
                     </p>
                   </div>
-                  <p className="mt-1 text-xs text-zinc-500">{plan.blurb}</p>
-                  <ul className="mt-3 space-y-1.5 text-sm text-zinc-700">
+                  <p className="mt-1 text-xs text-muted-foreground">{plan.blurb}</p>
+                  <ul className="mt-3 space-y-1.5 text-sm text-foreground/85">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-center gap-2">
                         <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" /> {f}

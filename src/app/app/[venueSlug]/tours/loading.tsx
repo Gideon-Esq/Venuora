@@ -1,0 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
+export default function ToursLoading() {
+  return <div role="status" aria-busy="true" className="space-y-6"><span className="sr-only">Loading venue tours…</span><Skeleton className="h-8 w-32" /><Skeleton className="h-4 w-72 max-w-full" />{[1,2,3].map(group=><section key={group} className="space-y-3"><Skeleton className="h-5 w-40" /><div className="rounded-xl border border-border bg-card p-4"><Skeleton className="mb-4 hidden h-9 w-full md:block" />{[1,2].map(row=><div key={row} className="flex flex-col gap-4 border-t border-border py-5 md:flex-row"><Skeleton className="h-5 w-40" /><Skeleton className="h-4 w-52 max-w-full" /><Skeleton className="h-4 w-28" /><Skeleton className="h-10 w-full md:ml-auto md:w-24" /></div>)}</div></section>)}</div>;
+}

@@ -15,7 +15,23 @@ export const STATUS_LABELS: Record<BookingStatus, string> = {
   EXPIRED: "Expired hold",
 };
 
-/** Tailwind classes for status chips. */
+/** Badge tone per status (see components/ui/badge.tsx). */
+export const STATUS_TONES: Record<
+  BookingStatus,
+  "accent" | "secondary" | "warning" | "success" | "muted" | "danger" | "outline"
+> = {
+  INQUIRY: "outline",
+  QUOTE_SENT: "secondary",
+  HOLD: "warning",
+  PENCILED: "warning",
+  CONFIRMED: "accent",
+  COMPLETED: "success",
+  CANCELLED: "muted",
+  NO_SHOW: "danger",
+  EXPIRED: "muted",
+};
+
+/** Tailwind classes for status chips (legacy; prefer STATUS_TONES). */
 export const STATUS_STYLES: Record<BookingStatus, string> = {
   INQUIRY: "bg-sky-100 text-sky-800",
   QUOTE_SENT: "bg-violet-100 text-violet-800",

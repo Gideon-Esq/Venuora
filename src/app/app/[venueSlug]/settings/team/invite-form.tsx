@@ -19,18 +19,20 @@ export function InviteForm({ slug }: { slug: string }) {
       action={async (formData: FormData) => {
         setSaving(true);
         setMessage(null);
+        try {
         const res = await inviteMemberAction(slug, formData);
-        setSaving(false);
+
         if (res.ok) {
           setMessage({
             ok: true,
-            text: "Member added. They can sign in with a magic link sent to their email — no password needed.",
+            text: "Member added. Ask them to request a sign-in link using this email.",
           });
           formRef.current?.reset();
           router.refresh();
         } else {
           setMessage({ ok: false, text: res.error });
         }
+        } catch { setMessage({ok:false,text:"Could not add this person. Please try again."}); } finally { setSaving(false); }
       }}
     >
       {message && (
@@ -44,8 +46,8 @@ export function InviteForm({ slug }: { slug: string }) {
           {message.text}
         </p>
       )}
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-56 flex-1">
+      <div className="space-y-4">
+        <div className="min-w-0">
           <Label htmlFor="invite-email">Email</Label>
           <Input
             id="invite-email"
@@ -63,8 +65,9 @@ export function InviteForm({ slug }: { slug: string }) {
             <option value="OWNER">Owner</option>
           </Select>
         </div>
-        <Button type="submit" disabled={saving}>
-          {saving ? "Inviting…" : "Invite"}
+        <p className="rounded-lg bg-muted p-3 text-xs leading-5 text-muted-foreground">This adds team access. No invitation email is sent; the person must sign in using this email address.</p>
+        <Button type="submit" disabled={saving} className="w-full">
+          {saving ? "Adding…" : "Add person"}
         </Button>
       </div>
     </form>

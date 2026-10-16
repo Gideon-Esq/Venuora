@@ -1,0 +1,1050 @@
+[
+  {
+    "file": "001-landing-desktop.png",
+    "route": "/",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "002-login-desktop.png",
+    "route": "/login",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "003-register-desktop.png",
+    "route": "/register",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "004-venue-page-desktop.png",
+    "route": "/v/[slug]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "005-book-step1-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 1 empty",
+    "ok": true
+  },
+  {
+    "file": "006-tour-form-desktop.png",
+    "route": "/v/[slug]/tour",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "007-manage-booking-confirmed-desktop.png",
+    "route": "/b/[token]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Confirmed, balance due",
+    "ok": true
+  },
+  {
+    "file": "008-quote-desktop.png",
+    "route": "/q/[token]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Open quote",
+    "ok": true
+  },
+  {
+    "file": "009-landing-mobile.png",
+    "route": "/",
+    "role": "Visitor",
+    "vp": "mobile",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "010-login-mobile.png",
+    "route": "/login",
+    "role": "Visitor",
+    "vp": "mobile",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "011-register-mobile.png",
+    "route": "/register",
+    "role": "Visitor",
+    "vp": "mobile",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "012-venue-page-mobile.png",
+    "route": "/v/[slug]",
+    "role": "Client",
+    "vp": "mobile",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "013-book-step1-mobile.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "mobile",
+    "state": "Step 1 empty",
+    "ok": true
+  },
+  {
+    "file": "014-tour-form-mobile.png",
+    "route": "/v/[slug]/tour",
+    "role": "Client",
+    "vp": "mobile",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "015-manage-booking-confirmed-mobile.png",
+    "route": "/b/[token]",
+    "role": "Client",
+    "vp": "mobile",
+    "state": "Confirmed, balance due",
+    "ok": true
+  },
+  {
+    "file": "016-quote-mobile.png",
+    "route": "/q/[token]",
+    "role": "Client",
+    "vp": "mobile",
+    "state": "Open quote",
+    "ok": true
+  },
+  {
+    "file": "017-landing-tablet.png",
+    "route": "/",
+    "role": "Visitor",
+    "vp": "tablet",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "018-login-error-desktop.png",
+    "route": "/login",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Error: invalid credentials",
+    "ok": true
+  },
+  {
+    "file": "019-register-error-desktop.png",
+    "route": "/register",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Error: account exists",
+    "ok": true
+  },
+  {
+    "file": "020-check-email-desktop.png",
+    "route": "/login/check-email",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "021-404-unknown-venue-desktop.png",
+    "route": "/v/[slug] (unknown)",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Not found",
+    "ok": true
+  },
+  {
+    "file": "022-404-unpublished-venue-desktop.png",
+    "route": "/v/[slug] (unpublished)",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Not found (unpublished)",
+    "ok": true
+  },
+  {
+    "file": "023-404-bad-manage-token-desktop.png",
+    "route": "/b/[token] (invalid)",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Not found",
+    "ok": true
+  },
+  {
+    "file": "024-app-unauthenticated-redirect-desktop.png",
+    "route": "/app (signed out)",
+    "role": "Visitor",
+    "vp": "desktop",
+    "state": "Redirected to /login",
+    "ok": true
+  },
+  {
+    "file": "025-venue-availability-next-month-desktop.png",
+    "route": "/v/[slug]?month=",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Availability next month",
+    "ok": true
+  },
+  {
+    "file": "026-book-step1-validation-error-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 1 validation error",
+    "ok": true
+  },
+  {
+    "file": "027-book-step2-spaces-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 2 space list (incl. unavailable / not-offered)",
+    "ok": true
+  },
+  {
+    "file": "028-book-step3-addons-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 3 add-ons selected, running total",
+    "ok": true
+  },
+  {
+    "file": "029-book-step4-details-error-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 4 validation error",
+    "ok": true
+  },
+  {
+    "file": "030-book-step4-details-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 4 filled",
+    "ok": true
+  },
+  {
+    "file": "031-book-step5-review-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 5 review (instant-book: Pay deposit)",
+    "ok": true
+  },
+  {
+    "file": "032-tour-error-past-date-desktop.png",
+    "route": "/v/[slug]/tour",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Error: past date",
+    "ok": true
+  },
+  {
+    "file": "033-tour-success-desktop.png",
+    "route": "/v/[slug]/tour",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Success",
+    "ok": true
+  },
+  {
+    "file": "034-manage-booking-paid-banner-desktop.png",
+    "route": "/b/[token]?paid=1",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Payment received banner",
+    "ok": true
+  },
+  {
+    "file": "035-manage-booking-cancel-dialog-desktop.png",
+    "route": "/b/[token]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Cancel dialog with refund preview",
+    "ok": true
+  },
+  {
+    "file": "036-manage-booking-cancelled-desktop.png",
+    "route": "/b/[token]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Cancelled",
+    "ok": true
+  },
+  {
+    "file": "037-manage-booking-completed-desktop.png",
+    "route": "/b/[token]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Completed (past)",
+    "ok": true
+  },
+  {
+    "file": "038-manage-booking-penciled-desktop.png",
+    "route": "/b/[token]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Penciled (no pay button)",
+    "ok": true
+  },
+  {
+    "file": "039-manage-booking-inquiry-desktop.png",
+    "route": "/b/[token]",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Inquiry",
+    "ok": true
+  },
+  {
+    "file": "040-app-venue-picker-owner-desktop.png",
+    "route": "/app",
+    "role": "Owner (2 venues)",
+    "vp": "desktop",
+    "state": "Venue picker",
+    "ok": true
+  },
+  {
+    "file": "041-app-new-venue-desktop.png",
+    "route": "/app/new",
+    "role": "Signed-in user",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "042-dashboard-owner-desktop.png",
+    "route": "/app/[venueSlug]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "043-calendar-month-desktop.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Month view",
+    "ok": true
+  },
+  {
+    "file": "044-calendar-booking-dialog-desktop.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Booking dialog (details + move)",
+    "ok": true
+  },
+  {
+    "file": "045-calendar-booking-dialog-move-preview-desktop.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Move preview result",
+    "ok": true
+  },
+  {
+    "file": "046-calendar-new-booking-dialog-desktop.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Fast phone booking dialog",
+    "ok": true
+  },
+  {
+    "file": "047-calendar-new-booking-validation-desktop.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Validation error",
+    "ok": true
+  },
+  {
+    "file": "048-calendar-week-desktop.png",
+    "route": "/app/[venueSlug]/calendar?view=week",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Week timeline",
+    "ok": true
+  },
+  {
+    "file": "049-calendar-day-desktop.png",
+    "route": "/app/[venueSlug]/calendar?view=day",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Day timeline",
+    "ok": true
+  },
+  {
+    "file": "050-bookings-all-desktop.png",
+    "route": "/app/[venueSlug]/bookings",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "All (populated)",
+    "ok": true
+  },
+  {
+    "file": "051-bookings-inquiries-tab-desktop.png",
+    "route": "/app/[venueSlug]/bookings?status=inquiries",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Inquiries tab",
+    "ok": true
+  },
+  {
+    "file": "052-bookings-search-no-results-desktop.png",
+    "route": "/app/[venueSlug]/bookings?q=",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Search, no results",
+    "ok": true
+  },
+  {
+    "file": "053-booking-detail-confirmed-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Confirmed upcoming",
+    "ok": true
+  },
+  {
+    "file": "054-booking-detail-manual-payment-dialog-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Manual payment dialog",
+    "ok": true
+  },
+  {
+    "file": "055-booking-detail-cancel-dialog-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Cancel dialog (owner)",
+    "ok": true
+  },
+  {
+    "file": "056-booking-detail-balance-link-created-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Success notice + balance link",
+    "ok": true
+  },
+  {
+    "file": "057-booking-detail-inquiry-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Inquiry (quote-stage actions)",
+    "ok": true
+  },
+  {
+    "file": "058-booking-detail-pencil-dialog-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Pencil hold dialog",
+    "ok": true
+  },
+  {
+    "file": "059-booking-detail-quote-sent-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Quote sent",
+    "ok": true
+  },
+  {
+    "file": "060-booking-detail-penciled-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Penciled (hold expiry)",
+    "ok": true
+  },
+  {
+    "file": "061-booking-detail-completed-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Completed (settle security)",
+    "ok": true
+  },
+  {
+    "file": "062-booking-detail-cancelled-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Cancelled (no actions)",
+    "ok": true
+  },
+  {
+    "file": "063-booking-detail-no-show-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "No-show (no actions)",
+    "ok": true
+  },
+  {
+    "file": "064-clients-desktop.png",
+    "route": "/app/[venueSlug]/clients",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "065-client-detail-desktop.png",
+    "route": "/app/[venueSlug]/clients/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "066-tours-desktop.png",
+    "route": "/app/[venueSlug]/tours",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Pending / upcoming / past",
+    "ok": true
+  },
+  {
+    "file": "067-spaces-desktop.png",
+    "route": "/app/[venueSlug]/spaces",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "068-space-new-desktop.png",
+    "route": "/app/[venueSlug]/spaces/new",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Empty form",
+    "ok": true
+  },
+  {
+    "file": "069-space-detail-desktop.png",
+    "route": "/app/[venueSlug]/spaces/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Space form + rates + danger zone",
+    "ok": true
+  },
+  {
+    "file": "070-space-deactivate-dialog-desktop.png",
+    "route": "/app/[venueSlug]/spaces/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Deactivate confirm dialog",
+    "ok": true
+  },
+  {
+    "file": "071-addons-sidebar-link-404-desktop.png",
+    "route": "/app/[venueSlug]/add-ons (sidebar link)",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "BROKEN: 404 from sidebar",
+    "ok": true
+  },
+  {
+    "file": "072-addons-desktop.png",
+    "route": "/app/[venueSlug]/addons",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "073-addon-edit-dialog-desktop.png",
+    "route": "/app/[venueSlug]/addons",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Edit add-on dialog",
+    "ok": true
+  },
+  {
+    "file": "074-settings-general-desktop.png",
+    "route": "/app/[venueSlug]/settings",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "075-settings-policies-desktop.png",
+    "route": "/app/[venueSlug]/settings/policies",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "076-settings-branding-desktop.png",
+    "route": "/app/[venueSlug]/settings/branding",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "077-settings-payments-desktop.png",
+    "route": "/app/[venueSlug]/settings/payments",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "078-settings-billing-desktop.png",
+    "route": "/app/[venueSlug]/settings/billing",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "079-settings-team-desktop.png",
+    "route": "/app/[venueSlug]/settings/team",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "080-onboarding-complete-desktop.png",
+    "route": "/app/[venueSlug]/onboarding",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "All steps done",
+    "ok": true
+  },
+  {
+    "file": "081-empty-dashboard-desktop.png",
+    "route": "/app/[venueSlug]",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Empty + setup banner",
+    "ok": true
+  },
+  {
+    "file": "082-empty-onboarding-desktop.png",
+    "route": "/app/[venueSlug]/onboarding",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Nothing done",
+    "ok": true
+  },
+  {
+    "file": "083-empty-onboarding-publish-error-desktop.png",
+    "route": "/app/[venueSlug]/onboarding",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Publish error (no spaces)",
+    "ok": true
+  },
+  {
+    "file": "084-empty-calendar-desktop.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Empty",
+    "ok": true
+  },
+  {
+    "file": "085-empty-bookings-desktop.png",
+    "route": "/app/[venueSlug]/bookings",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Empty",
+    "ok": true
+  },
+  {
+    "file": "086-empty-clients-desktop.png",
+    "route": "/app/[venueSlug]/clients",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Empty",
+    "ok": true
+  },
+  {
+    "file": "087-empty-tours-desktop.png",
+    "route": "/app/[venueSlug]/tours",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Empty",
+    "ok": true
+  },
+  {
+    "file": "088-empty-spaces-desktop.png",
+    "route": "/app/[venueSlug]/spaces",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Empty",
+    "ok": true
+  },
+  {
+    "file": "089-empty-addons-desktop.png",
+    "route": "/app/[venueSlug]/addons",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Empty",
+    "ok": true
+  },
+  {
+    "file": "090-empty-settings-billing-trial-desktop.png",
+    "route": "/app/[venueSlug]/settings/billing",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Trial",
+    "ok": true
+  },
+  {
+    "file": "091-empty-settings-payments-not-connected-desktop.png",
+    "route": "/app/[venueSlug]/settings/payments",
+    "role": "Owner (new venue)",
+    "vp": "desktop",
+    "state": "Stripe not connected",
+    "ok": true
+  },
+  {
+    "file": "092-dashboard-owner-mobile.png",
+    "route": "/app/[venueSlug]",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "093-nav-menu-open-mobile.png",
+    "route": "(app shell)",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Mobile slide-over menu",
+    "ok": true
+  },
+  {
+    "file": "094-calendar-month-mobile.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Month view",
+    "ok": true
+  },
+  {
+    "file": "095-calendar-week-mobile.png",
+    "route": "/app/[venueSlug]/calendar?view=week",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Week timeline (horizontal scroll)",
+    "ok": true
+  },
+  {
+    "file": "096-calendar-new-booking-dialog-mobile.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Fast phone booking dialog",
+    "ok": true
+  },
+  {
+    "file": "097-bookings-mobile.png",
+    "route": "/app/[venueSlug]/bookings",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Cards",
+    "ok": true
+  },
+  {
+    "file": "098-booking-detail-confirmed-mobile.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Confirmed upcoming",
+    "ok": true
+  },
+  {
+    "file": "099-clients-mobile.png",
+    "route": "/app/[venueSlug]/clients",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Cards",
+    "ok": true
+  },
+  {
+    "file": "100-space-detail-mobile.png",
+    "route": "/app/[venueSlug]/spaces/[id]",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Long form",
+    "ok": true
+  },
+  {
+    "file": "101-addons-mobile.png",
+    "route": "/app/[venueSlug]/addons",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Table (horizontal scroll)",
+    "ok": true
+  },
+  {
+    "file": "102-settings-policies-mobile.png",
+    "route": "/app/[venueSlug]/settings/policies",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "103-tours-mobile.png",
+    "route": "/app/[venueSlug]/tours",
+    "role": "Owner",
+    "vp": "mobile",
+    "state": "Default",
+    "ok": true
+  },
+  {
+    "file": "104-dashboard-owner-tablet.png",
+    "route": "/app/[venueSlug]",
+    "role": "Owner",
+    "vp": "tablet",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "105-nav-menu-open-tablet.png",
+    "route": "(app shell)",
+    "role": "Owner",
+    "vp": "tablet",
+    "state": "Mobile slide-over menu",
+    "ok": true
+  },
+  {
+    "file": "106-calendar-month-tablet.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "tablet",
+    "state": "Month view",
+    "ok": true
+  },
+  {
+    "file": "107-calendar-week-tablet.png",
+    "route": "/app/[venueSlug]/calendar?view=week",
+    "role": "Owner",
+    "vp": "tablet",
+    "state": "Week timeline (horizontal scroll)",
+    "ok": true
+  },
+  {
+    "file": "108-calendar-new-booking-dialog-tablet.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Owner",
+    "vp": "tablet",
+    "state": "Fast phone booking dialog",
+    "ok": true
+  },
+  {
+    "file": "109-bookings-tablet.png",
+    "route": "/app/[venueSlug]/bookings",
+    "role": "Owner",
+    "vp": "tablet",
+    "state": "Cards",
+    "ok": true
+  },
+  {
+    "file": "110-booking-detail-confirmed-tablet.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "tablet",
+    "state": "Confirmed upcoming",
+    "ok": true
+  },
+  {
+    "file": "111-dashboard-manager-desktop.png",
+    "route": "/app/[venueSlug]",
+    "role": "Manager",
+    "vp": "desktop",
+    "state": "Populated",
+    "ok": true
+  },
+  {
+    "file": "112-settings-manager-404-desktop.png",
+    "route": "/app/[venueSlug]/settings",
+    "role": "Manager",
+    "vp": "desktop",
+    "state": "Not found (role too low, but link visible)",
+    "ok": true
+  },
+  {
+    "file": "113-onboarding-manager-404-desktop.png",
+    "route": "/app/[venueSlug]/onboarding",
+    "role": "Manager",
+    "vp": "desktop",
+    "state": "Not found",
+    "ok": true
+  },
+  {
+    "file": "114-dashboard-staff-desktop.png",
+    "route": "/app/[venueSlug]",
+    "role": "Staff",
+    "vp": "desktop",
+    "state": "Populated (no payment/tour actions)",
+    "ok": true
+  },
+  {
+    "file": "115-calendar-week-staff-desktop.png",
+    "route": "/app/[venueSlug]/calendar?view=week",
+    "role": "Staff",
+    "vp": "desktop",
+    "state": "No New booking button",
+    "ok": true
+  },
+  {
+    "file": "116-calendar-booking-dialog-staff-desktop.png",
+    "route": "/app/[venueSlug]/calendar",
+    "role": "Staff",
+    "vp": "desktop",
+    "state": "Read-only dialog",
+    "ok": true
+  },
+  {
+    "file": "117-bookings-staff-desktop.png",
+    "route": "/app/[venueSlug]/bookings",
+    "role": "Staff",
+    "vp": "desktop",
+    "state": "List (rows link to 404)",
+    "ok": true
+  },
+  {
+    "file": "118-booking-detail-staff-404-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Staff",
+    "vp": "desktop",
+    "state": "Not found (role too low)",
+    "ok": true
+  },
+  {
+    "file": "119-spaces-staff-404-desktop.png",
+    "route": "/app/[venueSlug]/spaces",
+    "role": "Staff",
+    "vp": "desktop",
+    "state": "Not found (role too low)",
+    "ok": true
+  },
+  {
+    "file": "120-admin-light-desktop.png",
+    "route": "/admin",
+    "role": "Super-admin",
+    "vp": "desktop",
+    "state": "OS light mode",
+    "ok": true
+  },
+  {
+    "file": "121-app-superadmin-no-venues-desktop.png",
+    "route": "/app (super-admin, no memberships)",
+    "role": "Super-admin",
+    "vp": "desktop",
+    "state": "Redirected to /app/new",
+    "ok": true
+  },
+  {
+    "file": "122-impersonation-dashboard-desktop.png",
+    "route": "/app/[venueSlug] (impersonating)",
+    "role": "Super-admin",
+    "vp": "desktop",
+    "state": "Impersonation banner",
+    "ok": true
+  },
+  {
+    "file": "123-admin-after-impersonation-desktop.png",
+    "route": "/admin",
+    "role": "Super-admin",
+    "vp": "desktop",
+    "state": "Audit log populated",
+    "ok": true
+  },
+  {
+    "file": "124-admin-dark-desktop.png",
+    "route": "/admin",
+    "role": "Super-admin",
+    "vp": "desktop",
+    "state": "OS dark mode",
+    "ok": true
+  },
+  {
+    "file": "125-app-new-venue-dark-desktop.png",
+    "route": "/app/new",
+    "role": "Signed-in user",
+    "vp": "desktop",
+    "state": "OS dark mode",
+    "ok": true
+  },
+  {
+    "file": "126-admin-mobile.png",
+    "route": "/admin",
+    "role": "Super-admin",
+    "vp": "mobile",
+    "state": "Table overflow",
+    "ok": true
+  },
+  {
+    "file": "127-app-venue-picker-dark-desktop.png",
+    "route": "/app",
+    "role": "Owner (2 venues)",
+    "vp": "desktop",
+    "state": "OS dark mode",
+    "ok": true
+  },
+  {
+    "file": "128-book-step5-request-to-book-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Step 5 review (request-to-book)",
+    "ok": true
+  },
+  {
+    "file": "129-book-inquiry-success-desktop.png",
+    "route": "/v/[slug]/book",
+    "role": "Client",
+    "vp": "desktop",
+    "state": "Inquiry success",
+    "ok": true
+  },
+  {
+    "file": "130-booking-detail-completed-security-held-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Completed, security deposit held",
+    "ok": true
+  },
+  {
+    "file": "131-booking-detail-settle-dialog-desktop.png",
+    "route": "/app/[venueSlug]/bookings/[id]",
+    "role": "Owner",
+    "vp": "desktop",
+    "state": "Settle security deposit dialog with deduction",
+    "ok": true
+  }
+]

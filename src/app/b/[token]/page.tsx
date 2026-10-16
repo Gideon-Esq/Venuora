@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { db } from "@/lib/db";
+import { ONLINE_HOLD_MINUTES } from "@/lib/holds";
 import { formatMoney } from "@/lib/money";
-import { formatInVenueTz } from "@/lib/time";
+import { formatInVenueTz, venueDateStr } from "@/lib/time";
 import { paidTowardsBooking, securityHeld } from "@/lib/payments";
 import type { CancellationTier, LineItem } from "@/lib/pricing";
 import { EVENT_TYPE_LABELS, SLOT_TYPE_LABELS } from "@/lib/labels";
 import { StatusBadge } from "@/components/ui/badge";
+import { Callout } from "@/components/ui/callout";
+import { Card } from "@/components/ui/card";
 import { BrandedHeader, PoweredByFooter } from "@/components/public/branded-header";
 import { PriceBreakdown } from "@/components/public/price-breakdown";
 import { cancellationSentences } from "@/components/public/policy-summary";
@@ -63,8 +66,12 @@ export default async function ManageBookingPage({
 
   const visiblePayments = booking.payments.filter((p) => p.status !== "PENDING");
 
+  const policySentences = cancellationSentences(
+    venue.cancellationTiers as unknown as CancellationTier[]
+  );
+
   return (
-    <div className="public-page flex flex-1 flex-col bg-zinc-50">
+    <div className="public-page flex flex-1 flex-col bg-background">
       <BrandedHeader
         name={venue.name}
         logoUrl={venue.logoUrl}
@@ -72,74 +79,71 @@ export default async function ManageBookingPage({
         href={venue.published ? `/v/${venue.slug}` : undefined}
       />
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6">
+      <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8 sm:px-6">
+        <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-widest text-primary">Private booking hub</p><h1 className="mt-2 text-2xl font-semibold tracking-tight">{booking.status === "CONFIRMED" ? "Your booking is confirmed" : "Your booking"}</h1><p className="mt-2 text-sm text-muted-foreground">{venue.name} · Booking {booking.id}</p></div><StatusBadge status={booking.status} /></div>
+        {booking.status === "CONFIRMED" && <Callout tone="success" icon={CheckCircle2} title="Your date is secure">Payment received and your booking is confirmed.</Callout>}
         {/* Success banners */}
-        {(sp.confirmed === "1" || sp.paid === "1") && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
-            <p className="text-sm font-medium text-emerald-800">
-              {sp.confirmed === "1"
+        {((sp.confirmed === "1" && booking.status === "CONFIRMED") || (sp.paid === "1" && paid > 0)) && (
+          <Callout tone="success" icon={CheckCircle2}>
+            <span className="font-medium">
+              {sp.confirmed === "1" && booking.status === "CONFIRMED"
                 ? "Deposit received — booking confirmed!"
                 : "Payment received — thank you!"}
-            </p>
-          </div>
+            </span>
+          </Callout>
         )}
 
         {booking.status === "HOLD" && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
-            <div className="text-sm text-amber-800">
-              <p className="font-semibold">Complete your payment within 15 minutes</p>
-              <p className="mt-0.5">
-                Your date is held while you pay the deposit
-                {booking.holdExpiresAt
-                  ? ` — the hold expires at ${formatInVenueTz(booking.holdExpiresAt, tz, "h:mm a")}`
-                  : ""}
-                . If it lapses, the slot is released to other clients.
-              </p>
-            </div>
-          </div>
+          <Callout
+            tone="warning"
+            icon={Clock}
+            title={`Complete your payment within ${ONLINE_HOLD_MINUTES} minutes`}
+          >
+            Your date is held while you pay the deposit
+            {booking.holdExpiresAt
+              ? ` — the hold expires at ${formatInVenueTz(booking.holdExpiresAt, tz, "h:mm a")}`
+              : ""}
+            . If it lapses, the slot is released to other clients.
+          </Callout>
         )}
 
         {booking.status === "CANCELLED" && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" aria-hidden />
-            <p className="text-sm text-rose-700">
-              This booking was cancelled
-              {booking.cancelledAt
-                ? ` on ${formatInVenueTz(booking.cancelledAt, tz, "MMM d, yyyy")}`
-                : ""}
-              {booking.cancelReason ? ` — ${booking.cancelReason}` : ""}.
-            </p>
-          </div>
+          <Callout tone="danger" icon={AlertTriangle}>
+            This booking was cancelled
+            {booking.cancelledAt
+              ? ` on ${formatInVenueTz(booking.cancelledAt, tz, "MMM d, yyyy")}`
+              : ""}
+            {booking.cancelReason ? ` — ${booking.cancelReason}` : ""}.
+          </Callout>
         )}
 
         {/* Event details */}
-        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <Card className="p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
-              {EVENT_TYPE_LABELS[booking.eventType]} at {venue.name}
-            </h1>
-            <StatusBadge status={booking.status} />
+            <h2 className="text-base font-semibold">Event details</h2>
+
           </div>
           <dl className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
             <Item label="Space" value={space.name} />
             <Item label="Booked by" value={booking.client.name} />
-            <Item label="Starts" value={formatInVenueTz(booking.start, tz)} />
-            <Item label="Ends" value={formatInVenueTz(booking.end, tz)} />
+            <Item label="Date" value={formatInVenueTz(booking.start, tz, "EEEE, MMMM d, yyyy")} />
+            <Item label="Time" value={`${formatInVenueTz(booking.start, tz, "h:mm a")}–${formatInVenueTz(booking.end, tz, "h:mm a")}`} />
+            <Item label="Event" value={EVENT_TYPE_LABELS[booking.eventType]} />
+            <Item label="Setup access" value={formatInVenueTz(booking.blockedStart, tz, "h:mm a")} />
+            <Item label="Timezone" value={tz} />
             <Item label="Guests" value={String(booking.guestCount)} />
             <Item label="Booking type" value={SLOT_TYPE_LABELS[booking.slotType]} />
           </dl>
-          <p className="mt-3 text-xs text-zinc-500">
+          <p className="mt-3 text-xs text-muted-foreground">
             All times shown in the venue&apos;s local time. Access opens {booking.setupBufferMins}{" "}
             minutes before your start time for setup.
           </p>
-        </section>
+        </Card>
 
         {/* Price breakdown */}
-        <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="text-base font-semibold text-zinc-900">Price breakdown</h2>
-          <div className="mt-3">
+        <Card className="p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-foreground">Payment summary</h2>
+          <details className="mt-3"><summary className="cursor-pointer text-sm text-muted-foreground">View price breakdown</summary>
             <PriceBreakdown
               lineItems={lineItems}
               subtotalCents={booking.subtotalCents}
@@ -147,9 +151,9 @@ export default async function ManageBookingPage({
               totalCents={booking.totalCents}
               currency={currency}
             />
-          </div>
+          </details>
 
-          <div className="mt-5 space-y-1.5 rounded-xl bg-zinc-50 p-4 text-sm">
+          <div className="mt-5 space-y-3 text-sm"><Row label="Total" value={formatMoney(booking.totalCents, currency)} />
             <Row label="Paid so far" value={formatMoney(paid, currency)} />
             <Row
               label={
@@ -174,40 +178,37 @@ export default async function ManageBookingPage({
               />
             )}
           </div>
-        </section>
+        </Card>
 
         {/* Payment history */}
         {visiblePayments.length > 0 && (
-          <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-base font-semibold text-zinc-900">Payment history</h2>
-            <ul className="mt-3 divide-y divide-zinc-100 text-sm">
+          <Card className="p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-foreground">Payment history</h2>
+            <ul className="mt-3 divide-y divide-border text-sm">
               {visiblePayments.map((p) => (
                 <li key={p.id} className="flex items-baseline justify-between gap-4 py-2.5">
-                  <div>
-                    <p className="font-medium text-zinc-900">
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground">
                       {PAYMENT_TYPE_LABELS[p.type] ?? p.type}
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-muted-foreground">
                       {formatInVenueTz(p.createdAt, tz, "MMM d, yyyy 'at' h:mm a")} ·{" "}
                       {PAYMENT_STATUS_LABELS[p.status] ?? p.status}
                       {p.reason ? ` · ${p.reason}` : ""}
                     </p>
                   </div>
-                  <span className="whitespace-nowrap font-medium text-zinc-900">
+                  <span className="whitespace-nowrap font-medium tabular-nums text-foreground">
                     {p.type === "REFUND" || p.type === "SECURITY_REFUND" ? "−" : ""}
                     {formatMoney(p.amountCents, currency)}
                   </span>
                 </li>
               ))}
             </ul>
-          </section>
+          </Card>
         )}
 
         {/* Actions */}
-        {(canPayBalance || canCancel) && (
-          <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-base font-semibold text-zinc-900">Manage this booking</h2>
-            <div className="mt-4">
+        {/* Always mounted so the post-cancel result survives the refresh. */}
               <BookingActions
                 token={token}
                 brandColor={venue.brandColor}
@@ -216,28 +217,35 @@ export default async function ManageBookingPage({
                 payAmountCents={balanceDue + securityOutstanding}
                 includesSecurity={securityOutstanding > 0}
                 canCancel={canCancel}
+                spaceName={space.name}
+                dateLabel={formatInVenueTz(booking.start, tz, "EEEE, MMMM d, yyyy")}
+                timeLabel={`${formatInVenueTz(booking.start, tz, "h:mm a")}–${formatInVenueTz(
+                  booking.end,
+                  tz,
+                  venueDateStr(booking.end, tz) === venueDateStr(booking.start, tz)
+                    ? "h:mm a"
+                    : "MMM d, h:mm a"
+                )}`}
+                securityHeldCents={securityHeldCents}
+                policySentences={policySentences}
               />
-            </div>
-          </section>
-        )}
 
+        {booking.status === "CONFIRMED" && <Card className="p-5 sm:p-6"><h2 className="text-base font-semibold">What happens next</h2><ol className="mt-4 space-y-3 text-sm text-muted-foreground"><li>1. Your date and space are secured.</li>{balanceDue > 0 && <li>2. Pay the remaining {formatMoney(balanceDue, currency)}{booking.balanceDueDate ? ` by ${formatInVenueTz(booking.balanceDueDate, tz, "MMM d")}` : " before your event"}.</li>}<li>3. Arrive for setup at {formatInVenueTz(booking.blockedStart, tz, "h:mm a")}.</li></ol></Card>}
         {/* Cancellation policy */}
-        <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="text-base font-semibold text-zinc-900">Cancellation policy</h2>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-600">
-            {cancellationSentences(
-              venue.cancellationTiers as unknown as CancellationTier[]
-            ).map((s) => (
+        <Card className="p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-foreground">Cancellation policy</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            {policySentences.map((s) => (
               <li key={s}>{s}</li>
             ))}
           </ul>
-        </section>
+        </Card>
 
         {(venue.email || venue.phone) && (
-          <p className="mt-6 text-center text-sm text-zinc-500">
+          <p className="text-center text-sm text-muted-foreground">
             Questions? Contact {venue.name}
             {venue.phone ? ` on ${venue.phone}` : ""}
-            {venue.email ? `${venue.phone ? " or" : ""} at ${venue.email}` : ""}.
+            {venue.email && <a className="ml-2 inline-block py-3 text-primary underline" href={`mailto:${venue.email}`}>Contact venue</a>}.
           </p>
         )}
       </main>
@@ -249,9 +257,9 @@ export default async function ManageBookingPage({
 
 function Item({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col">
-      <dt className="text-xs uppercase tracking-wide text-zinc-400">{label}</dt>
-      <dd className="mt-0.5 font-medium text-zinc-900">{value}</dd>
+    <div className="flex flex-col rounded-lg bg-muted p-3">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
     </div>
   );
 }
@@ -259,8 +267,10 @@ function Item({ label, value }: { label: string; value: string }) {
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex items-baseline justify-between">
-      <span className={strong ? "font-medium text-zinc-900" : "text-zinc-600"}>{label}</span>
-      <span className={strong ? "font-semibold text-zinc-900" : "text-zinc-700"}>{value}</span>
+      <span className={strong ? "font-medium text-foreground" : "text-muted-foreground"}>{label}</span>
+      <span className={strong ? "font-semibold tabular-nums text-foreground" : "tabular-nums text-foreground"}>
+        {value}
+      </span>
     </div>
   );
 }

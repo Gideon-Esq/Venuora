@@ -103,7 +103,7 @@ export async function publicPriceQuote(
 }
 
 export type OnlineBookingResult =
-  | { ok: true; mode: "checkout"; paymentUrl: string; manageToken: string }
+  | { ok: true; mode: "checkout"; paymentUrl: string; manageToken: string; holdUntil?: string }
   | { ok: true; mode: "inquiry"; manageToken: string }
   | { ok: false; error: string; alternatives?: { spaces: string[]; dates: string[] } };
 
@@ -185,7 +185,7 @@ export async function submitOnlineBookingAction(
       result.bookingId,
       `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/b/${booking.manageToken}?confirmed=1`
     );
-    return { ok: true, mode: "checkout", paymentUrl, manageToken: booking.manageToken };
+    return { ok: true, mode: "checkout", paymentUrl, manageToken: booking.manageToken, holdUntil: booking.holdExpiresAt?.toISOString() };
   }
 
   if (booking.client.email) {

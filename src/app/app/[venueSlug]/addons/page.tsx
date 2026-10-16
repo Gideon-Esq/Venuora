@@ -10,9 +10,10 @@ export default async function AddOnsPage({
   const { venueSlug } = await params;
   const { venue } = await requireVenue(venueSlug, "MANAGER");
 
+  // Stable order (sortOrder only) so rows don't jump when toggled on/off.
   const addOns = await db.addOn.findMany({
     where: { venueId: venue.id },
-    orderBy: [{ active: "desc" }, { sortOrder: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
   const rows: AddOnRow[] = addOns.map((a) => ({
@@ -25,16 +26,5 @@ export default async function AddOnsPage({
     active: a.active,
   }));
 
-  return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
-      <div>
-        <h1 className="text-xl font-semibold text-zinc-900">Add-ons</h1>
-        <p className="text-sm text-zinc-500">
-          Extras clients can add to any booking — equipment, services, staff. They show up on
-          quotes and invoices automatically.
-        </p>
-      </div>
-      <AddOnsManager slug={venueSlug} addOns={rows} currency={venue.currency} />
-    </div>
-  );
+  return <AddOnsManager slug={venueSlug} addOns={rows} currency={venue.currency} />;
 }

@@ -4,6 +4,7 @@
 // success or returns { ok: false, error } (expired / slot just taken).
 
 import * as React from "react";
+import { textOnColor } from "@/lib/color";
 import { Loader2 } from "lucide-react";
 import { acceptQuoteAction } from "@/actions/quote";
 
@@ -48,8 +49,8 @@ export function AcceptQuoteButton({
       <button
         onClick={accept}
         disabled={pending}
-        className="inline-flex h-13 min-h-12 items-center justify-center gap-2 rounded-xl px-8 text-base font-semibold text-white shadow-md transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
-        style={{ backgroundColor: brandColor }}
+        className="inline-flex w-full h-13 min-h-12 items-center justify-center gap-2 rounded-xl px-8 text-base font-semibold text-white shadow-md transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
+        style={{ backgroundColor: brandColor, color: textOnColor(brandColor) }}
       >
         {pending && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
         {label}

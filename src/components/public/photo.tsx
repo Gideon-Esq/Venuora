@@ -1,27 +1,18 @@
 // Public-page imagery: plain <img> for external URLs (next/image not
-// required), with tasteful gradient placeholders when a venue/space has no
-// photos yet.
+// required), with a calm neutral placeholder when a venue/space has no photo.
 
+import { ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const GRADIENTS = [
-  "bg-gradient-to-br from-indigo-200 via-violet-100 to-zinc-100",
-  "bg-gradient-to-br from-emerald-200 via-teal-100 to-zinc-100",
-  "bg-gradient-to-br from-amber-200 via-orange-100 to-zinc-100",
-  "bg-gradient-to-br from-sky-200 via-cyan-100 to-zinc-100",
-  "bg-gradient-to-br from-rose-200 via-pink-100 to-zinc-100",
-];
 
 export function PhotoOrPlaceholder({
   src,
   alt,
-  seed = 0,
   className,
   loading = "lazy",
 }: {
   src?: string | null;
   alt: string;
-  /** Varies the placeholder gradient so grids don't look flat. */
+  /** Kept for API compatibility; placeholders are no longer varied. */
   seed?: number;
   className?: string;
   loading?: "lazy" | "eager";
@@ -43,8 +34,10 @@ export function PhotoOrPlaceholder({
     <div
       role="img"
       aria-label={alt}
-      className={cn("h-full w-full", GRADIENTS[Math.abs(seed) % GRADIENTS.length], className)}
-    />
+      className={cn("flex h-full w-full items-center justify-center bg-muted text-muted-foreground/60", className)}
+    >
+      <ImageIcon className="h-8 w-8" aria-hidden />
+    </div>
   );
 }
 

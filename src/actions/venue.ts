@@ -184,3 +184,19 @@ export async function markDevOnboardedAction(slug: string) {
   revalidatePath(`/app/${slug}`);
   return { ok: true as const };
 }
+
+/** Currency is venue-wide: historical bookings currently inherit that currency. */
+export async function updateVenueCurrencyAction(slug: string, currency: string) {
+  const { venue } = await requireVenue(slug, "OWNER");
+  const { CURRENCIES } = await import("@/lib/currencies");
+  const code = currency.toLowerCase().trim();
+  if (!CURRENCIES.some(item => item.code === code)) return {ok:false as const,error:"Choose a supported currency."};
+  if (code === venue.currency.toLowerCase()) return {ok:true as const};
+  const bookings = await db.booking.count({where:{venueId:venue.id}});
+  const payments = await db.payment.count({where:{booking:{venueId:venue.id}}});
+  if (bookings || payments) return {ok:false as const,error:"Currency cannot be changed after bookings have been created because it would change the currency shown on existing quotes and payments. Contact support to migrate this venue’s currency safely."};
+  await db.venue.update({where:{id:venue.id},data:{currency:code}});
+  revalidatePath(`/app/${slug}`, "layout");
+  revalidatePath(`/v/${slug}`, "layout");
+  return {ok:true as const};
+}

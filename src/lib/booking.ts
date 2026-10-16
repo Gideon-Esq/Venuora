@@ -16,7 +16,7 @@ export const BLOCKING_STATUSES: BookingStatus[] = [
   BookingStatus.NO_SHOW,
 ];
 
-export const ONLINE_HOLD_MINUTES = 15;
+export { ONLINE_HOLD_MINUTES } from "./holds";
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

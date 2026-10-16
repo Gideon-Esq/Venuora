@@ -19,22 +19,22 @@ export function PriceBreakdown({
 }) {
   return (
     <div className="text-sm">
-      <ul className="divide-y divide-zinc-100">
+      <ul className="divide-y divide-border">
         {lineItems.map((li, i) => (
           <li key={i} className="flex items-baseline justify-between gap-4 py-2">
-            <span className="text-zinc-700">{li.label}</span>
-            <span className="whitespace-nowrap font-medium text-zinc-900">
+            <span className="text-foreground/85">{li.label}</span>
+            <span className="whitespace-nowrap font-medium text-foreground">
               {formatMoney(li.totalCents, currency)}
             </span>
           </li>
         ))}
       </ul>
-      <div className="mt-1 space-y-1.5 border-t border-zinc-200 pt-3">
+      <div className="mt-1 space-y-1.5 border-t border-border pt-3">
         <Row label="Subtotal" value={formatMoney(subtotalCents, currency)} />
         {taxCents > 0 && <Row label="Tax" value={formatMoney(taxCents, currency)} />}
         <div className="flex items-baseline justify-between pt-1 text-base">
-          <span className="font-semibold text-zinc-900">Total</span>
-          <span className="font-semibold text-zinc-900">
+          <span className="font-semibold text-foreground">Total</span>
+          <span className="font-semibold text-foreground">
             {formatMoney(totalCents, currency)}
           </span>
         </div>
@@ -45,7 +45,7 @@ export function PriceBreakdown({
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between text-zinc-600">
+    <div className="flex items-baseline justify-between text-muted-foreground">
       <span>{label}</span>
       <span>{value}</span>
     </div>

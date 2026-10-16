@@ -25,6 +25,11 @@ import {
 import { createPaymentSession, refundStripePayment } from "./stripe";
 import { calendarDaysUntil } from "./time";
 
+/** Owner-entered text placed into email HTML must be escaped. */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export function brandOf(venue: Venue): VenueBrand {
@@ -36,6 +41,11 @@ export function brandOf(venue: Venue): VenueBrand {
     phone: venue.phone,
     timezone: venue.timezone,
     currency: venue.currency,
+    addressLine1: venue.addressLine1,
+    addressLine2: venue.addressLine2,
+    city: venue.city,
+    region: venue.region,
+    postalCode: venue.postalCode,
   };
 }
 
@@ -54,6 +64,7 @@ export function summaryOf(
     balanceDueDate: booking.balanceDueDate,
     securityDepositCents: booking.securityDepositCents,
     manageUrl: `${appUrl()}/b/${booking.manageToken}`,
+    setupBufferMins: booking.setupBufferMins,
   };
 }
 
@@ -381,8 +392,8 @@ export async function sendEventWeekEmails(): Promise<number> {
     const brand = brandOf(b.venue);
     const logistics = `
       <p><strong>Access from:</strong> ${formatAccessTime(b)} (includes your ${b.setupBufferMins}-min setup window)</p>
-      ${b.venue.houseRules ? `<p><strong>House rules:</strong> ${b.venue.houseRules}</p>` : ""}
-      <p><strong>Questions?</strong> ${b.venue.phone ?? b.venue.email ?? "Contact us via your booking page."}</p>`;
+      ${b.venue.houseRules ? `<p><strong>House rules:</strong> ${escapeHtml(b.venue.houseRules)}</p>` : ""}
+      <p><strong>Questions?</strong> ${escapeHtml(b.venue.phone ?? b.venue.email ?? "Contact us via your booking page.")}</p>`;
     const { eventWeekEmail } = await import("./email-templates");
     const email = eventWeekEmail(brand, summaryOf(b), logistics);
     await sendEmail({ to: b.client.email, ...email, replyTo: b.venue.email ?? undefined });

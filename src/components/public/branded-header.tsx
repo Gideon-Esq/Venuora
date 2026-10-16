@@ -2,6 +2,7 @@
 // public venue routes: brand-color bar + logo/name. Server-safe.
 
 import Link from "next/link";
+import { textOnColor } from "@/lib/color";
 
 export interface VenueBrandProps {
   name: string;
@@ -27,32 +28,32 @@ export function BrandedHeader({ name, logoUrl, brandColor, href }: VenueBrandPro
       ) : (
         <span
           aria-hidden
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"
-          style={{ backgroundColor: brandColor }}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold"
+          style={{ backgroundColor: brandColor, color: textOnColor(brandColor) }}
         >
           {name.slice(0, 1).toUpperCase()}
         </span>
       )}
-      <span className="text-base font-semibold tracking-tight text-zinc-900">{name}</span>
+      <span className="text-base font-semibold tracking-tight text-foreground">{name}</span>
     </span>
   );
 
   return (
-    <header className="bg-white">
+    <header className="bg-card">
       <div aria-hidden className="h-1.5 w-full" style={{ backgroundColor: brandColor }} />
       <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
         {href ? <Link href={href}>{inner}</Link> : inner}
       </div>
-      <div className="h-px w-full bg-zinc-200" />
+      <div className="h-px w-full bg-border" />
     </header>
   );
 }
 
 export function PoweredByFooter() {
   return (
-    <footer className="mx-auto w-full max-w-3xl px-4 py-8 text-center text-xs text-zinc-400 sm:px-6">
+    <footer className="mx-auto w-full max-w-3xl px-4 py-8 text-center text-xs text-muted-foreground sm:px-6">
       Powered by{" "}
-      <Link href="/" className="font-medium text-zinc-500 hover:text-zinc-700">
+      <Link href="/" className="font-medium text-muted-foreground hover:text-foreground">
         Venuora
       </Link>
     </footer>

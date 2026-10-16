@@ -1,26 +1,34 @@
+import { toRatePlanInput } from "@/lib/booking-helpers";
 import { blockingWhere } from "@/lib/booking";
 import { db } from "@/lib/db";
 import { requireVenue, roleAtLeast } from "@/lib/tenancy";
 import { venueDateStr, venueLocalToUtc } from "@/lib/time";
-import {
-  addDaysStr,
-  dowOfStr,
-  startOfMonthStr,
-  type CalBooking,
-  type CalView,
-} from "./cal-shared";
+import { addDaysStr, visibleDays, type CalBooking, type CalView, type OpenHours } from "./cal-shared";
 import { CalendarView } from "./calendar-view";
 
 export const metadata = { title: "Calendar — Venuora" };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+/** Defensive parse of Venue.operatingHours (JSON column). */
+function parseOpenHours(raw: unknown): OpenHours[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((h): OpenHours[] => {
+    if (!h || typeof h !== "object") return [];
+    const o = h as Record<string, unknown>;
+    if (typeof o.dow !== "number" || typeof o.open !== "string" || typeof o.close !== "string") return [];
+    if (!TIME_RE.test(o.open) || !TIME_RE.test(o.close)) return [];
+    return [{ dow: o.dow, open: o.open, close: o.close, closed: o.closed === true }];
+  });
+}
 
 export default async function CalendarPage({
   params,
   searchParams,
 }: {
   params: Promise<{ venueSlug: string }>;
-  searchParams: Promise<{ view?: string; date?: string }>;
+  searchParams: Promise<{ view?: string; date?: string; new?: string }>;
 }) {
   const [{ venueSlug }, sp] = await Promise.all([params, searchParams]);
   const { venue, role } = await requireVenue(venueSlug);
@@ -31,28 +39,20 @@ export default async function CalendarPage({
     sp.view === "week" || sp.view === "day" ? sp.view : "month";
   const anchor = sp.date && DATE_RE.test(sp.date) ? sp.date : todayStr;
 
-  // Visible venue-local day range for the current view (+1-day margin each
-  // side so bars clipped at edges/midnight still load).
-  let firstDay: string;
-  let dayCount: number;
-  if (view === "month") {
-    const first = startOfMonthStr(anchor);
-    firstDay = addDaysStr(first, -dowOfStr(first));
-    dayCount = 42;
-  } else if (view === "week") {
-    firstDay = addDaysStr(anchor, -dowOfStr(anchor));
-    dayCount = 7;
-  } else {
-    firstDay = anchor;
-    dayCount = 1;
-  }
+  // Visible venue-local day range for the current view — the same helper
+  // the client grid uses (Monday-first weeks) — plus a 1-day margin each
+  // side so bars clipped at edges/midnight still load. Day view loads its
+  // whole week so the phone day-strip can show per-day counts.
+  const days = visibleDays(view === "day" ? "week" : view, anchor);
+  const firstDay = days[0];
+  const dayCount = days.length;
   const from = venueLocalToUtc(tz, addDaysStr(firstDay, -1), "00:00");
   const to = venueLocalToUtc(tz, addDaysStr(firstDay, dayCount + 1), "06:00");
 
-  const [spaces, bookings] = await Promise.all([
+  const [spaces, bookings, manager] = await Promise.all([
     db.space.findMany({
       where: { venueId: venue.id, active: true },
-      select: { id: true, name: true, color: true },
+      select: { id: true, name: true, color: true, seatedCapacity: true, standingCapacity: true, setupBufferMins: true, teardownBufferMins: true, ratePlan: { include: { peakPeriods: true } } },
       orderBy: { sortOrder: "asc" },
     }),
     db.booking.findMany({
@@ -68,9 +68,10 @@ export default async function CalendarPage({
           { status: { in: ["INQUIRY", "QUOTE_SENT"] } },
         ],
       },
-      include: { client: { select: { name: true, phone: true } }, space: { select: { name: true } } },
+      include: { payments: { where: { status: "SUCCEEDED", type: { in: ["BOOKING_DEPOSIT", "BALANCE"] } }, select: { amountCents: true } }, client: { select: { name: true, phone: true, email: true } }, space: { select: { name: true } } },
       orderBy: { start: "asc" },
     }),
+    db.venueMember.findFirst({ where: { venueId: venue.id, role: { in: ["OWNER", "MANAGER"] } }, select: { user: { select: { email: true } } }, orderBy: { role: "asc" } }),
   ]);
 
   const calBookings: CalBooking[] = bookings.map((b) => ({
@@ -82,6 +83,7 @@ export default async function CalendarPage({
     slotType: b.slotType,
     clientName: b.client.name,
     clientPhone: b.client.phone,
+    clientEmail: b.client.email,
     start: b.start.getTime(),
     end: b.end.getTime(),
     blockedStart: b.blockedStart.getTime(),
@@ -89,28 +91,29 @@ export default async function CalendarPage({
     guestCount: b.guestCount,
     totalCents: b.totalCents,
     depositCents: b.depositCents,
+    notes: b.notes,
+    paidCents: b.payments.reduce((sum, payment) => sum + payment.amountCents, 0),
+    holdExpiresAt: b.holdExpiresAt ? b.holdExpiresAt.getTime() : null,
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Calendar</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          All times in {tz.replace(/_/g, " ")}. Click an empty slot to book while the
-          caller is on the line.
-        </p>
-      </div>
-      <CalendarView
-        slug={venue.slug}
-        timezone={tz}
-        currency={venue.currency}
-        view={view}
-        anchor={anchor}
-        today={todayStr}
-        spaces={spaces}
-        bookings={calBookings}
-        canManage={roleAtLeast(role, "MANAGER")}
-      />
-    </div>
+    <CalendarView
+      openCreate={sp.new === "1" && roleAtLeast(role, "MANAGER")}
+      slug={venue.slug}
+      venueName={venue.name}
+      openHours={parseOpenHours(venue.operatingHours)}
+      timezone={tz}
+      currency={venue.currency}
+      view={view}
+      anchor={anchor}
+      today={todayStr}
+      spaces={spaces.map((space) => ({ ...space, ratePlan: space.ratePlan ? toRatePlanInput(space.ratePlan) : null }))}
+      taxBps={venue.taxBps}
+      depositPct={venue.depositPct}
+      securityDepositCents={venue.securityDepositCents}
+      bookings={calBookings}
+      managerEmail={venue.email || manager?.user.email || null}
+      canManage={roleAtLeast(role, "MANAGER")}
+    />
   );
 }

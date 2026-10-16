@@ -1,13 +1,26 @@
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, CircleDashed, CreditCard, ShieldCheck } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { connectStripeAction } from "@/actions/venue";
 import { db } from "@/lib/db";
 import { requireVenue } from "@/lib/tenancy";
 import { cn } from "@/lib/utils";
-import { GeneralForm } from "../settings/general-form";
-import { PublishButton } from "./publish-button";
+import { LiveView } from "./live-view";
+import { PublishPanel } from "./publish-button";
+
+type Step = {
+  key: "details" | "space" | "rates" | "addons" | "policies" | "stripe" | "publish";
+  title: string;
+  done: boolean;
+  optional?: boolean;
+  /** Shown when the step is incomplete. */
+  todo: string;
+  /** Shown in the compact checklist when complete. */
+  doneNote: string;
+  cta?: React.ReactNode;
+};
 
 export default async function OnboardingPage({
   params,
@@ -26,202 +39,119 @@ export default async function OnboardingPage({
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const publicUrl = `${appUrl}/v/${venueSlug}`;
   const connectAction = connectStripeAction.bind(null, venueSlug);
+  const base = `/app/${venueSlug}`;
 
-  const steps: {
-    title: string;
-    done: boolean;
-    optional?: boolean;
-    body: React.ReactNode;
-  }[] = [
+  const linkCta = (href: string, label: string, primary = false) => (
+    <Link
+      href={href}
+      className={cn(buttonVariants({ variant: primary ? "default" : "outline" }), "w-full sm:w-auto")}
+    >
+      {label} <ArrowRight className="h-4 w-4" aria-hidden />
+    </Link>
+  );
+
+  const steps: Step[] = [
     {
-      title: "Your venue details",
+      key: "details",
+      title: "Venue details",
       done: venue.onboardingStep >= 1,
-      body: (
-        <div className="max-w-xl">
-          <p className="mb-3 text-sm text-zinc-500">
-            Name, contact details and address — they appear on quotes and your public page.
-          </p>
-          <GeneralForm
-            slug={venueSlug}
-            initial={{
-              name: venue.name,
-              timezone: venue.timezone,
-              email: venue.email ?? "",
-              phone: venue.phone ?? "",
-              addressLine1: venue.addressLine1 ?? "",
-              city: venue.city ?? "",
-              region: venue.region ?? "",
-              postalCode: venue.postalCode ?? "",
-              country: venue.country,
-              description: venue.description ?? "",
-            }}
-          />
-        </div>
-      ),
+      todo: "Add your name, contact details and address. They appear on quotes and your public page.",
+      doneNote: "Name, contact details and address saved.",
+      cta: linkCta(`${base}/settings/general`, "Fix it"),
     },
     {
+      key: "space",
       title: "Add your first space",
       done: spaceCount > 0,
-      body: (
-        <div>
-          <p className="mb-3 text-sm text-zinc-500">
-            {spaceCount > 0
-              ? `You have ${spaceCount} space${spaceCount === 1 ? "" : "s"} set up.`
-              : "A space is a room or hall clients can book — like “Main Hall”."}
-          </p>
-          <Link href={`/app/${venueSlug}/spaces/new`} className={buttonVariants({ variant: spaceCount > 0 ? "outline" : "default" })}>
-            {spaceCount > 0 ? "Add another space" : "Add a space"} <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      ),
+      todo: "A space is a room or hall clients can book, like “Main Hall”. You need one to publish.",
+      doneNote: `${spaceCount} active space${spaceCount === 1 ? "" : "s"} set up.`,
+      cta: linkCta(`${base}/spaces/new`, "Add a space", true),
     },
     {
+      key: "rates",
       title: "Set your rates",
       done: ratePlanCount > 0,
-      body: (
-        <div>
-          <p className="mb-3 text-sm text-zinc-500">
-            {ratePlanCount > 0
-              ? "Rates are set — quotes and online booking can price themselves."
-              : "Hourly rate, packages and weekend pricing — set them on each space's page."}
-          </p>
-          <Link href={`/app/${venueSlug}/spaces`} className={buttonVariants({ variant: ratePlanCount > 0 ? "outline" : "default" })}>
-            Go to spaces <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      ),
+      todo: "Add hourly rates or packages on each space so quotes and online booking can price themselves.",
+      doneNote: "Rates are set.",
+      cta: linkCta(`${base}/spaces`, "Go to spaces"),
     },
     {
+      key: "addons",
       title: "Add-ons",
-      done: addOnCount > 0,
       optional: true,
-      body: (
-        <div>
-          <p className="mb-3 text-sm text-zinc-500">
-            Optional extras like chairs, projector or cleaning. You can skip this and add them
-            any time.
-          </p>
-          <Link href={`/app/${venueSlug}/addons`} className={buttonVariants({ variant: "outline" })}>
-            Set up add-ons <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      ),
+      done: addOnCount > 0,
+      todo: "Optional extras like chairs, a projector or cleaning. Skip it and add them any time.",
+      doneNote: `${addOnCount} add-on${addOnCount === 1 ? "" : "s"} available.`,
+      cta: linkCta(`${base}/addons`, "Set up add-ons"),
     },
     {
+      key: "policies",
       title: "Booking policies",
       done: venue.onboardingStep >= 5,
-      body: (
-        <div>
-          <p className="mb-3 text-sm text-zinc-500">
-            Deposit %, when the balance is due, and your cancellation rules. Sensible defaults
-            are already in place — review and save.
-          </p>
-          <Link href={`/app/${venueSlug}/settings/policies`} className={buttonVariants({ variant: venue.onboardingStep >= 5 ? "outline" : "default" })}>
-            Review policies <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      ),
+      todo: "Review your deposit, balance due date and cancellation rules. Sensible defaults are already in place.",
+      doneNote: "Deposit and cancellation rules reviewed.",
+      cta: linkCta(`${base}/settings/policies`, "Review policies"),
     },
     {
-      title: "Connect Stripe for online payments",
+      key: "stripe",
+      title: "Connect Stripe",
       done: venue.stripeChargesEnabled,
-      body: (
-        <div>
-          <p className="mb-3 text-sm text-zinc-500">
-            {venue.stripeChargesEnabled
-              ? "Connected — clients can pay deposits and balances online."
-              : "So clients can pay deposits online and money lands in your bank account. Takes about 5 minutes."}
-          </p>
-          {!venue.stripeChargesEnabled && (
-            <form action={connectAction}>
-              <Button type="submit">
-                {venue.stripeAccountId ? "Resume Stripe onboarding" : "Connect Stripe"}
-              </Button>
-            </form>
-          )}
-        </div>
+      todo: "Let clients pay deposits and balances online, straight to your bank account. Takes about 5 minutes.",
+      doneNote: "Connected. Clients can pay online.",
+      cta: (
+        <form action={connectAction}>
+          <Button type="submit" variant="outline" className="w-full sm:w-auto">
+            <CreditCard className="h-4 w-4" aria-hidden />
+            {venue.stripeAccountId ? "Resume Stripe setup" : "Connect Stripe"}
+          </Button>
+        </form>
       ),
     },
     {
+      key: "publish",
       title: "Publish your venue page",
       done: venue.published,
-      body: (
-        <div>
-          {!venue.published && (
-            <p className="mb-3 text-sm text-zinc-500">
-              This makes your public page live at <code className="text-xs">{publicUrl}</code> so
-              clients can browse and book.
-            </p>
-          )}
-          <PublishButton slug={venueSlug} published={venue.published} publicUrl={publicUrl} />
-        </div>
-      ),
+      todo: "Make your public page live so clients can browse, inquire and book.",
+      doneNote: "Your public page is live.",
     },
   ];
 
-  const doneCount = steps.filter((s) => s.done).length;
-  const pct = Math.round((doneCount / steps.length) * 100);
+  if (venue.published) {
+    const hrefs: Partial<Record<Step["key"], string>> = {
+      details: `${base}/settings/general`,
+      space: `${base}/spaces/new`,
+      rates: `${base}/spaces`,
+      addons: `${base}/addons`,
+      policies: `${base}/settings/policies`,
+      stripe: `${base}/settings/payments`,
+    };
+    return (
+      <LiveView
+        slug={venueSlug}
+        venueName={venue.name}
+        publicUrl={publicUrl}
+        steps={steps.map((s) => ({
+          key: s.key,
+          title: s.title,
+          done: s.done,
+          optional: s.optional,
+          href: hrefs[s.key],
+        }))}
+      />
+    );
+  }
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6">
-      <div>
-        <h1 className="text-xl font-semibold text-zinc-900">Set up your venue</h1>
-        <p className="text-sm text-zinc-500">
-          Seven quick steps and you&apos;re taking bookings. You can leave and come back any
-          time — your progress is saved.
-        </p>
-      </div>
-
-      {/* Progress */}
-      <div>
-        <div className="mb-1 flex justify-between text-xs text-zinc-500">
-          <span>
-            {doneCount} of {steps.length} steps done
-          </span>
-          <span>{pct}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-zinc-100">
-          <div
-            className="h-full rounded-full bg-indigo-600 transition-all"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Vertical steps */}
-      <ol className="space-y-4">
-        {steps.map((step, i) => (
-          <li key={step.title}>
-            <Card className={cn(step.done && "border-emerald-200")}>
-              <CardContent className="p-5">
-                <div className="flex items-start gap-3">
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-                      step.done
-                        ? "bg-emerald-600 text-white"
-                        : "bg-indigo-50 text-indigo-700"
-                    )}
-                  >
-                    {step.done ? <Check className="h-4 w-4" /> : i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="flex flex-wrap items-center gap-2 font-semibold text-zinc-900">
-                      {step.title}
-                      {step.optional && (
-                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-normal text-zinc-500">
-                          Optional
-                        </span>
-                      )}
-                    </h2>
-                    <div className="mt-2">{step.body}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </li>
-        ))}
-      </ol>
+  const doneCount = steps.filter((step) => step.done).length;
+  const pct = Math.round(doneCount / steps.length * 100);
+  const ready = spaceCount > 0;
+  const next = steps.find(step => !step.done && step.key !== "publish");
+  return <div className="mx-auto max-w-5xl space-y-6">
+    <p className="text-xs text-muted-foreground"><Link href={`${base}/settings`} className="hover:underline">Settings</Link> / Setup</p>
+    <PageHeader title={`Get ${venue.name} ready to publish`} description="Complete these steps in any order. You can leave and come back without losing progress." actions={<a href={`#setup-${next?.key ?? "publish"}`} className={buttonVariants()}>Resume setup</a>} />
+    <Card><CardContent className="p-5 sm:p-6"><p className="text-xs text-muted-foreground">Setup progress</p><p className="mt-1 text-xl font-semibold">{doneCount} of {steps.length} complete</p><div role="progressbar" aria-label="Setup progress" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={doneCount} className="mt-4 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${pct}%`}} /></div><p className="mt-3 text-xs text-primary">{ready ? "Ready to publish. You can finish the remaining setup later." : "Add an active space to make your public page ready."}</p></CardContent></Card>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <section><h2 className="text-lg font-semibold">Setup checklist</h2><p className="mb-4 mt-1 text-sm text-muted-foreground">Finish the essentials, then add anything that helps your venue stand out.</p><div className="space-y-3">{steps.map(step => <details id={`setup-${step.key}`} key={step.key} className="group scroll-mt-24 rounded-xl border border-border bg-card"><summary className="flex cursor-pointer list-none items-center gap-3 p-4"><span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full",step.done ? "bg-success-soft text-success" : "bg-accent text-primary")}>{step.done ? <Check className="h-4 w-4" /> : <CircleDashed className="h-4 w-4" />}</span><span className="min-w-0 flex-1"><span className="block text-sm font-medium">{step.title}</span><span className="mt-1 block text-xs text-muted-foreground">{step.done ? step.doneNote : step.todo}</span></span><span className={cn("hidden text-xs sm:block",step.done ? "text-success" : "text-muted-foreground")}>{step.done ? "Complete" : step.key === "publish" && ready ? "Ready" : step.optional ? "Optional" : "To do"}</span><ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" /></summary><div className="border-t border-border p-4">{step.key === "publish" ? <a href="#publish-panel" className={buttonVariants({variant:"outline"})}>Review publishing</a> : step.cta}</div></details>)}</div></section>
+      <aside className="space-y-4"><Card className="p-5"><h2 className="flex items-center justify-between text-base font-semibold">Publish readiness<ShieldCheck className="h-4 w-4 text-success" /></h2><p className="mt-2 text-sm text-muted-foreground">{ready ? "Your venue meets the requirements to publish." : "Create an active space before publishing."}</p><ul className="mt-4 space-y-3 text-sm"><li className="flex items-center gap-2">{ready ? <Check className="h-4 w-4 text-success" /> : <CircleDashed className="h-4 w-4" />}At least one active space</li><li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" />Public URL reserved</li></ul><p className="mt-4 rounded-lg bg-muted p-3 text-xs leading-5 text-muted-foreground">Rates, Stripe and add-ons can be completed later. Online payments require Stripe; online pricing requires rates.</p></Card><div id="publish-panel" className="scroll-mt-24"><PublishPanel slug={venueSlug} published={venue.published} publicUrl={publicUrl} /></div><p className="text-center text-xs text-muted-foreground">You can leave and return anytime.</p></aside>
     </div>
-  );
+  </div>;
 }

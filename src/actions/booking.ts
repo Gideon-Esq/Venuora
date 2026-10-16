@@ -7,6 +7,8 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
+  checkSlot,
+  blockingWhere,
   createBooking,
   rescheduleBooking,
   transitionBooking,
@@ -30,7 +32,7 @@ import {
   summaryOf,
 } from "@/lib/payments";
 import { assertVenueRow, requireVenue } from "@/lib/tenancy";
-import { addDays } from "@/lib/time";
+import { addDays, venueDateStr, venueLocalToUtc } from "@/lib/time";
 import { phoneBookingSchema, securitySettlementSchema } from "@/lib/validators";
 import { createQuoteForBooking } from "@/lib/quotes";
 
@@ -42,8 +44,25 @@ async function spaceWithRates(spaceId: string): Promise<SpaceWithRates> {
 }
 
 export type PhoneBookingResult =
-  | { ok: true; bookingId: string; depositUrl?: string }
+  | { ok: true; bookingId: string; depositUrl?: string; totalCents: number; depositCents: number; currency: string; holdUntil: string | null }
   | { ok: false; error: string; alternatives?: { spaces: { id: string; name: string }[]; dates: string[] } };
+
+/** Read-only preview; the create action checks availability again inside its transaction. */
+export async function previewPhoneBookingAction(slug: string, input: unknown) {
+  const { venue } = await requireVenue(slug, "MANAGER");
+  const parsed = phoneBookingSchema.pick({ spaceId: true, eventType: true, slotType: true, date: true, startTime: true, endTime: true, endsNextDay: true }).safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Choose a valid date and time." };
+  if (!parsed.data.endsNextDay && parsed.data.endTime <= parsed.data.startTime) return { ok: false as const, error: "End time must be after start. Select Ends next day for an overnight event." };
+  const space = await assertVenueRow(await spaceWithRates(parsed.data.spaceId), venue.id);
+  if (!space.ratePlan) return { ok: false as const, error: "Set up rates for this space first." };
+  try {
+    const priced = priceSelection(venue, space, parsed.data, []);
+    const available = await checkSlot(space.id, priced.start, priced.end, space.setupBufferMins, space.teardownBufferMins);
+    return { ok: true as const, available, totalCents: priced.quote.totalCents, depositCents: priced.depositCents, currency: venue.currency };
+  } catch (error) {
+    return { ok: false as const, error: error instanceof Error ? error.message : "Could not check this window." };
+  }
+}
 
 /** The under-45-seconds phone booking form. */
 export async function createPhoneBookingAction(
@@ -54,6 +73,7 @@ export async function createPhoneBookingAction(
   const parsed = phoneBookingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const d = parsed.data;
+  if (!d.endsNextDay && d.endTime <= d.startTime) return { ok: false, error: "End time must be after start. Select Ends next day for an overnight event." };
 
   const space = await assertVenueRow(await spaceWithRates(d.spaceId), venue.id);
   if (!space.ratePlan) return { ok: false, error: "Set up rates for this space first" };
@@ -79,6 +99,7 @@ export async function createPhoneBookingAction(
     CONFIRM: "CONFIRMED",
   } as const;
 
+  const holdUntil = d.action === "PENCIL" ? addDays(new Date(), d.pencilDays) : null;
   const result = await createBooking({
     venueId: venue.id,
     spaceId: space.id,
@@ -99,7 +120,7 @@ export async function createPhoneBookingAction(
     depositCents: priced.depositCents,
     securityDepositCents: priced.securityDepositCents,
     balanceDueDate: priced.balanceDueDate,
-    holdExpiresAt: d.action === "PENCIL" ? addDays(new Date(), d.pencilDays) : null,
+    holdExpiresAt: holdUntil,
     notes: d.notes || null,
   });
 
@@ -124,7 +145,7 @@ export async function createPhoneBookingAction(
   }
 
   revalidatePath(`/app/${slug}/calendar`);
-  return { ok: true, bookingId: result.bookingId, depositUrl };
+  return { ok: true, bookingId: result.bookingId, depositUrl, totalCents: priced.quote.totalCents, depositCents: priced.depositCents, currency: venue.currency, holdUntil: holdUntil?.toISOString() ?? null };
 }
 
 export async function pencilHoldAction(slug: string, bookingId: string, days: number) {
@@ -170,7 +191,8 @@ export async function recordManualPaymentAction(
   slug: string,
   bookingId: string,
   type: "BOOKING_DEPOSIT" | "BALANCE" | "SECURITY_DEPOSIT",
-  amountCents: number
+  amountCents: number,
+  details?: { date: string; method: string; note: string }
 ) {
   const { venue } = await requireVenue(slug, "MANAGER");
   const booking = await assertVenueRow(
@@ -180,6 +202,13 @@ export async function recordManualPaymentAction(
   if (!Number.isInteger(amountCents) || amountCents <= 0) {
     return { ok: false as const, error: "Enter a valid amount" };
   }
+  if (!["BOOKING_DEPOSIT", "BALANCE", "SECURITY_DEPOSIT"].includes(type)) return { ok: false as const, error: "Choose a valid payment type." };
+  let receivedAt: Date | undefined;
+  if (details) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(details.date) || !["Bank transfer", "Cash", "Card", "Other"].includes(details.method) || details.note.length > 1000) return { ok: false as const, error: "Review the payment date, method, and note." };
+    if (details.date > venueDateStr(new Date(), venue.timezone)) return { ok: false as const, error: "Payment date cannot be in the future." };
+    receivedAt = venueLocalToUtc(venue.timezone, details.date, "12:00");
+  }
   await db.payment.create({
     data: {
       venueId: venue.id,
@@ -188,10 +217,12 @@ export async function recordManualPaymentAction(
       status: "SUCCEEDED",
       amountCents,
       currency: venue.currency,
-      reason: "Recorded manually by venue",
+      reason: details ? `${details.method}${details.note.trim() ? ` · ${details.note.trim()}` : ""}` : "Recorded manually by venue",
+      ...(receivedAt ? { createdAt: receivedAt } : {}),
     },
   });
-  if (type === "BOOKING_DEPOSIT" && booking.status !== "CONFIRMED") {
+  const depositPaid = await db.payment.aggregate({ where: { venueId: venue.id, bookingId, status: "SUCCEEDED", type: { in: ["BOOKING_DEPOSIT", "BALANCE"] } }, _sum: { amountCents: true } });
+  if (type === "BOOKING_DEPOSIT" && ["INQUIRY", "QUOTE_SENT", "PENCILED", "HOLD"].includes(booking.status) && (depositPaid._sum.amountCents ?? 0) >= booking.depositCents) {
     const res = await transitionBooking(bookingId, "CONFIRMED", { holdExpiresAt: null });
     if (!res.ok) return { ok: false as const, error: "Payment recorded, but the slot is blocked by another booking!" };
   }
@@ -206,6 +237,10 @@ export interface ReschedulePreview {
   oldTotalCents?: number;
   newTotalCents?: number;
   priceChanged?: boolean;
+  depositCents?: number;
+  available?: boolean;
+  conflict?: { name: string; space: string; start: string; end: string; blockedStart: string };
+  alternatives?: { spaceId: string; name: string; date: string; startTime: string; endTime: string; endsNextDay: boolean }[];
 }
 
 /** Step 1 of calendar drag: validate + reprice, ask for confirmation. */
@@ -231,12 +266,37 @@ export async function previewRescheduleAction(
     const addOnCents = (booking.lineItems as { kind: string; totalCents: number }[])
       .filter((li) => li.kind === "ADDON")
       .reduce((s, li) => s + li.totalCents, 0);
-    const newTotal = priced.quote.totalCents + addOnCents;
+    const subtotal = priced.quote.subtotalCents + addOnCents;
+    const newTotal = subtotal + Math.round(subtotal * venue.taxBps / 10_000);
+    const blockedStart = new Date(priced.start.getTime() - space.setupBufferMins * 60000);
+    const blockedEnd = new Date(priced.end.getTime() + space.teardownBufferMins * 60000);
+    const clash = await db.booking.findFirst({
+      where: { venueId: venue.id, spaceId: space.id, id: { not: bookingId }, blockedStart: { lt: blockedEnd }, blockedEnd: { gt: blockedStart }, ...blockingWhere() },
+      include: { client: { select: { name: true } }, space: { select: { name: true } } },
+    });
+    const alternatives: NonNullable<ReschedulePreview["alternatives"]> = [];
+    const capacity = Math.max(space.seatedCapacity, space.standingCapacity);
+    const fitsCapacity = capacity === 0 || booking.guestCount <= capacity;
+    if (clash || !fitsCapacity) {
+      const others = await db.space.findMany({ where: { venueId: venue.id, active: true, id: { not: space.id }, OR: [{ seatedCapacity: { gte: booking.guestCount } }, { standingCapacity: { gte: booking.guestCount } }] }, orderBy: { sortOrder: "asc" } });
+      for (const other of others) {
+        if (await checkSlot(other.id, priced.start, priced.end, other.setupBufferMins, other.teardownBufferMins, bookingId)) alternatives.push({ ...target, endsNextDay: target.endsNextDay ?? false, spaceId: other.id, name: other.name });
+        if (alternatives.length >= 3) break;
+      }
+      for (let day = 1; fitsCapacity && day <= 7 && alternatives.length < 3; day++) {
+        const date = venueDateStr(addDays(priced.start, day), venue.timezone);
+        const next = priceSelection(venue, space, { ...target, date, endsNextDay: target.endsNextDay ?? false, slotType: booking.slotType }, []);
+        if (await checkSlot(space.id, next.start, next.end, space.setupBufferMins, space.teardownBufferMins, bookingId)) alternatives.push({ ...target, endsNextDay: target.endsNextDay ?? false, date, spaceId: space.id, name: space.name });
+      }
+    }
     return {
-      ok: true,
-      oldTotalCents: booking.totalCents,
-      newTotalCents: newTotal,
+      ok: true, available: !clash && fitsCapacity,
+      error: !fitsCapacity ? `Guest count exceeds ${space.name} capacity of ${capacity}.` : undefined,
+      oldTotalCents: booking.totalCents, newTotalCents: newTotal,
+      depositCents: booking.depositCents,
       priceChanged: newTotal !== booking.totalCents,
+      conflict: clash ? { name: clash.client.name, space: clash.space.name, start: clash.start.toISOString(), end: clash.end.toISOString(), blockedStart: clash.blockedStart.toISOString() } : undefined,
+      alternatives,
     };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Could not price the new slot" };
@@ -247,7 +307,8 @@ export async function previewRescheduleAction(
 export async function applyRescheduleAction(
   slug: string,
   bookingId: string,
-  target: { spaceId: string; date: string; startTime: string; endTime: string; endsNextDay?: boolean }
+  target: { spaceId: string; date: string; startTime: string; endTime: string; endsNextDay?: boolean },
+  expectedTotalCents?: number
 ) {
   const { venue } = await requireVenue(slug, "MANAGER");
   const booking = await assertVenueRow(
@@ -256,6 +317,9 @@ export async function applyRescheduleAction(
   );
   const space = await assertVenueRow(await spaceWithRates(target.spaceId), venue.id);
   if (!space.ratePlan) return { ok: false as const, error: "Target space has no rates" };
+
+  const capacity = Math.max(space.seatedCapacity, space.standingCapacity);
+  if (capacity > 0 && booking.guestCount > capacity) return { ok: false as const, error: `Guest count exceeds ${space.name} capacity of ${capacity}.` };
 
   const oldItems = booking.lineItems as { kind: string; label: string; qty: number; unitCents: number; totalCents: number }[];
   const addOnItems = oldItems.filter((li) => li.kind === "ADDON");
@@ -269,6 +333,8 @@ export async function applyRescheduleAction(
   const lineItems = [...priced.quote.lineItems, ...addOnItems];
   const subtotal = lineItems.reduce((s, li) => s + li.totalCents, 0);
   const tax = Math.round((subtotal * venue.taxBps) / 10_000);
+
+  if (expectedTotalCents !== undefined && expectedTotalCents !== subtotal + tax) return { ok: false as const, error: "The price changed while you were reviewing. Check the updated quote before confirming." };
 
   const res: CreateBookingResult = await rescheduleBooking(bookingId, {
     spaceId: space.id,
@@ -290,7 +356,7 @@ export async function applyRescheduleAction(
       alternatives: res.alternatives.spaces.map((s) => s.name),
     };
   }
-  return { ok: true as const };
+  return { ok: true as const, totalCents: subtotal + tax };
 }
 
 export async function cancelBookingAction(slug: string, bookingId: string, reason: string) {

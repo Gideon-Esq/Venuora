@@ -3,12 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
+import { contrastRatio, textOnColor } from "@/lib/color";
 import type { CancellationTier } from "@/lib/pricing";
 import { PoweredByFooter } from "@/components/public/branded-header";
 import { photoList } from "@/components/public/photo";
 import { BookingWizard, type WizardAddOn, type WizardSpace, type WizardVenue } from "./booking-wizard";
 
 export const metadata: Metadata = { title: "Book online" };
+
+const CANVAS = "#f9f7f0";
 
 export default async function BookPage({
   params,
@@ -20,7 +23,7 @@ export default async function BookPage({
   const [{ slug }, sp] = await Promise.all([params, searchParams]);
 
   const venue = await db.venue.findUnique({
-    where: { slug },
+    where: { slug, published: true },
     include: {
       spaces: {
         where: { active: true, ratePlan: { isNot: null } },
@@ -60,6 +63,7 @@ export default async function BookPage({
       ...(s.ratePlan?.eveningCents != null ? (["EVENING"] as const) : []),
     ],
     minBookingHours: s.ratePlan?.minBookingHours ?? 1,
+    hourlyRateCents: s.ratePlan?.hourlyRateCents ?? null,
   }));
 
   const addOns: WizardAddOn[] = venue.addOns.map((a) => ({
@@ -74,30 +78,67 @@ export default async function BookPage({
   const initialDate = /^\d{4}-\d{2}-\d{2}$/.test(sp.date ?? "") ? sp.date! : null;
   const initialSpaceId = spaces.some((s) => s.id === sp.space) ? sp.space! : null;
 
+  const brand = venue.brandColor;
+  // Brand colour as text only when it's readable on the canvas.
+  const eyebrowColor = contrastRatio(brand, CANVAS) >= 4.5 ? brand : undefined;
+
   return (
-    <div className="public-page flex flex-1 flex-col bg-zinc-50">
-      <div aria-hidden className="h-1.5 w-full" style={{ backgroundColor: venue.brandColor }} />
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
-          <span className="text-base font-semibold tracking-tight text-zinc-900">
-            {venue.name}
-          </span>
+    <div className="public-page flex min-h-dvh flex-1 flex-col bg-background">
+      <header className="border-b border-border bg-card">
+        <div aria-hidden className="h-1 w-full" style={{ backgroundColor: brand }} />
+        <div className="mx-auto grid h-16 w-full max-w-2xl grid-cols-[2.75rem_1fr_2.75rem] items-center px-4 sm:px-6">
           <Link
             href={`/v/${venue.slug}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-zinc-900"
+            aria-label={`Back to ${venue.name}`}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            Back to venue
+            <ArrowLeft className="h-5 w-5" aria-hidden />
           </Link>
+          <div className="flex min-w-0 items-center justify-center gap-2.5">
+            {venue.logoUrl ? (
+              // External, unoptimizable URL.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={venue.logoUrl}
+                alt=""
+                width={36}
+                height={36}
+                className="h-9 w-9 shrink-0 rounded-lg object-cover"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
+                style={{ backgroundColor: brand, color: textOnColor(brand) }}
+              >
+                {venue.name.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span className="truncate text-base font-semibold tracking-tight text-foreground">
+              {venue.name}
+            </span>
+          </div>
+          <span aria-hidden />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Book {venue.name}</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Check live availability, see transparent pricing and secure your date.
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+        <div className="sr-only">
+        <p
+          className={eyebrowColor ? "text-xs font-semibold uppercase tracking-[0.14em]" : "text-xs font-semibold uppercase tracking-[0.14em] text-foreground"}
+          style={eyebrowColor ? { color: eyebrowColor } : undefined}
+        >
+          Booking your space
         </p>
-        <div className="mt-6">
+        <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-tight text-foreground sm:text-[32px]">
+          Plan your event
+        </h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+          Choose a date, space and details for {venue.name}. Live availability and transparent
+          pricing at every step — your entries stay with you as you move through the booking.
+        </p>
+        </div>
+        <div>
           <BookingWizard
             venue={wizardVenue}
             spaces={spaces}

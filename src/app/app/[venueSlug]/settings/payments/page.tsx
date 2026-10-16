@@ -67,11 +67,11 @@ export default async function PaymentsSettingsPage({
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                <CreditCard className="mt-0.5 h-5 w-5 shrink-0 text-zinc-500" />
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/60 p-4">
+                <CreditCard className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-medium text-zinc-900">Not connected yet</p>
-                  <p className="text-sm text-zinc-600">
+                  <p className="font-medium text-foreground">Not connected yet</p>
+                  <p className="text-sm text-muted-foreground">
                     Connect Stripe to send payment links and let clients pay online. It takes
                     about 5 minutes — you&apos;ll need your bank details.
                   </p>
@@ -83,8 +83,8 @@ export default async function PaymentsSettingsPage({
             </div>
           )}
 
-          <div className="rounded-lg border border-zinc-200 p-4 text-sm text-zinc-600">
-            <p className="font-medium text-zinc-900">How fees work</p>
+          <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">How fees work</p>
             <p className="mt-1">
               Venuora adds a <strong>3% platform fee</strong> on online booking payments
               (deposits and balances). Refundable security deposits carry no platform fee, and

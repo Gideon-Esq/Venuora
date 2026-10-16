@@ -5,26 +5,26 @@ import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcryptjs";
 import { db } from "./db";
-
-const resendConfigured =
-  !!process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes("placeholder");
+import { magicLinkEmail } from "./email-templates";
+import { emailTransport, sendEmail } from "./email";
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" }, // Credentials provider requires JWT sessions
-  pages: { signIn: "/login", verifyRequest: "/login/check-email" },
+  pages: { signIn: "/login", verifyRequest: "/login/check-email", error: "/login/error" },
   providers: [
     Resend({
       apiKey: process.env.RESEND_API_KEY,
-      from: process.env.EMAIL_FROM ?? "Venuora <onboarding@resend.dev>",
-      // Without a real Resend key (local dev), print the magic link instead.
-      ...(resendConfigured
-        ? {}
-        : {
-            async sendVerificationRequest({ identifier, url }) {
-              console.log(`\n🔑 Magic link for ${identifier}:\n${url}\n`);
-            },
-          }),
+      from: process.env.EMAIL_FROM?.trim() || "Venuora <onboarding@resend.dev>",
+      // Keep the existing provider ID so saved magic-link flows remain compatible.
+      async sendVerificationRequest({ identifier, url }) {
+        if (emailTransport() === "console") {
+          console.log(`\n🔑 Magic link for ${identifier}:\n${url}\n`);
+          return;
+        }
+        const { subject, html, text } = magicLinkEmail(url);
+        await sendEmail({ to: identifier, subject, html, text });
+      },
     }),
     Credentials({
       name: "Email & password",

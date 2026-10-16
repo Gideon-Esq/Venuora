@@ -1,4 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireVenue } from "@/lib/tenancy";
 import { BrandingForm } from "./branding-form";
 
@@ -10,25 +9,19 @@ export default async function BrandingSettingsPage({
   const { venueSlug } = await params;
   const { venue } = await requireVenue(venueSlug, "OWNER");
 
+  const photos = Array.isArray(venue.photos)
+    ? (venue.photos as unknown[]).filter((p): p is string => typeof p === "string")
+    : [];
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Branding</CardTitle>
-        <CardDescription>
-          Make your public page and emails look like you — not like software.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <BrandingForm
-          slug={venueSlug}
-          venueName={venue.name}
-          initial={{
-            brandColor: venue.brandColor,
-            logoUrl: venue.logoUrl ?? "",
-            photos: (venue.photos ?? []) as unknown as string[],
-          }}
-        />
-      </CardContent>
-    </Card>
+    <BrandingForm
+      slug={venueSlug}
+      venueName={venue.name}
+      initial={{
+        brandColor: venue.brandColor,
+        logoUrl: venue.logoUrl ?? "",
+        photos,
+      }}
+    />
   );
 }

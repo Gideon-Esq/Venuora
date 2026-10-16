@@ -1,11 +1,15 @@
 import Link from "next/link";
-import { Clock, Plus, Users, Zap } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Gauge, LayoutGrid, Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/money";
+import { PLAN_SPACE_LIMITS } from "@/lib/stripe";
 import { requireVenue } from "@/lib/tenancy";
+import { SpacesList, type SpaceRow } from "./spaces-list";
 
 export default async function SpacesPage({
   params,
@@ -13,7 +17,7 @@ export default async function SpacesPage({
   params: Promise<{ venueSlug: string }>;
 }) {
   const { venueSlug } = await params;
-  const { venue } = await requireVenue(venueSlug, "MANAGER");
+  const { venue, role } = await requireVenue(venueSlug, "MANAGER");
 
   const spaces = await db.space.findMany({
     where: { venueId: venue.id },
@@ -21,96 +25,96 @@ export default async function SpacesPage({
     orderBy: [{ active: "desc" }, { sortOrder: "asc" }],
   });
 
+  const activeCount = spaces.filter((s) => s.active).length;
+  const limit = PLAN_SPACE_LIMITS[venue.planTier] ?? 1;
+  const isOwner = role === "OWNER";
+  const needsRates = spaces.filter((s) => s.active && !s.ratePlan);
+
+  const rows: SpaceRow[] = spaces.map((s) => {
+    const photos = (s.photos ?? []) as unknown as string[];
+    return {
+      id: s.id,
+      name: s.name,
+      description: s.description ?? "",
+      photo: photos[0] ?? null,
+      color: s.color,
+      active: s.active,
+      instantBook: s.instantBook,
+      seated: s.seatedCapacity,
+      standing: s.standingCapacity,
+      setupMins: s.setupBufferMins,
+      teardownMins: s.teardownBufferMins,
+      fromRate: s.ratePlan ? formatMoney(s.ratePlan.hourlyRateCents, venue.currency) : null,
+    };
+  });
+
+  const addSpace = (
+    <Link href={`/app/${venueSlug}/spaces/new`} className={buttonVariants()}>
+      <Plus className="h-4 w-4" aria-hidden /> Add space
+    </Link>
+  );
+
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-zinc-900">Spaces</h1>
-          <p className="text-sm text-zinc-500">
-            The rooms and halls clients can book. Each has its own rates and buffers.
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Workspace spaces"
+        eyebrowIcon={LayoutGrid}
+        title="Spaces"
+        description="Set up the rooms and areas clients can book."
+        actions={addSpace}
+      />
+
+      <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/70 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card/70 text-primary">
+          <Gauge className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground">
+            {activeCount} of {limit} space{limit === 1 ? "" : "s"} used
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Your current plan includes up to {limit} space{limit === 1 ? "" : "s"}.
           </p>
         </div>
-        <Link href={`/app/${venueSlug}/spaces/new`} className={buttonVariants()}>
-          <Plus className="h-4 w-4" /> Add space
-        </Link>
+        {isOwner && (
+          <Link
+            href={`/app/${venueSlug}/settings/billing`}
+            className="inline-flex min-h-10 items-center text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            View plan limits
+          </Link>
+        )}
       </div>
 
       {spaces.length === 0 ? (
-        <Card className="p-10 text-center">
-          <p className="text-sm text-zinc-500">
-            No spaces yet. Add your first space — it takes about two minutes.
-          </p>
-          <Link
-            href={`/app/${venueSlug}/spaces/new`}
-            className={buttonVariants({ className: "mt-4" })}
-          >
-            <Plus className="h-4 w-4" /> Add your first space
-          </Link>
+        <Card>
+          <EmptyState
+            icon={LayoutGrid}
+            title="No spaces yet"
+            description="Your public page needs at least one active space before clients can book. Add your first space — it takes about two minutes."
+            action={<div className="flex flex-wrap justify-center gap-3">{addSpace}{isOwner && <Link href={`/app/${venueSlug}/onboarding`} className={buttonVariants({variant:"outline"})}>Open setup</Link>}</div>}
+          />
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {spaces.map((s) => {
-            const photos = (s.photos ?? []) as unknown as string[];
-            return (
-              <Link key={s.id} href={`/app/${venueSlug}/spaces/${s.id}`} className="group block">
-                <Card className="overflow-hidden transition-shadow group-hover:shadow-md">
-                  {photos[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={photos[0]}
-                      alt={s.name}
-                      className="h-36 w-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="flex h-36 w-full items-end p-3"
-                      style={{
-                        background: `linear-gradient(135deg, ${s.color}22, ${s.color}66)`,
-                      }}
-                    >
-                      <span
-                        className="inline-block h-3 w-3 rounded-full"
-                        style={{ backgroundColor: s.color }}
-                        aria-hidden
-                      />
-                    </div>
-                  )}
-                  <div className="space-y-2 p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <h2 className="font-semibold text-zinc-900">{s.name}</h2>
-                      {!s.active ? (
-                        <Badge className="bg-zinc-100 text-zinc-500">Inactive</Badge>
-                      ) : s.instantBook ? (
-                        <Badge className="bg-indigo-100 text-indigo-700">
-                          <Zap className="mr-1 h-3 w-3" /> Instant book
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600">
-                      <span className="inline-flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5 text-zinc-400" />
-                        {s.seatedCapacity} seated · {s.standingCapacity} standing
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-zinc-400" />
-                        {s.setupBufferMins}m setup / {s.teardownBufferMins}m teardown
-                      </span>
-                    </div>
-                    <div className="text-sm">
-                      {s.ratePlan ? (
-                        <span className="font-medium text-zinc-900">
-                          from {formatMoney(s.ratePlan.hourlyRateCents, venue.currency)}/hr
-                        </span>
-                      ) : (
-                        <span className="text-amber-700">No rates set yet — add them</span>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+        <SpacesList slug={venueSlug} spaces={rows} />
+      )}
+
+      {needsRates.length > 0 && (
+        <Callout tone="warning" title="Needs attention">
+          <ul className="space-y-1">
+            {needsRates.map((s) => (
+              <li key={s.id}>
+                <Link
+                  href={`/app/${venueSlug}/spaces/${s.id}?tab=rates`}
+                  className="font-medium underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  {s.name}
+                </Link>{" "}
+                needs rates before bookings can be priced automatically.
+              </li>
+            ))}
+          </ul>
+        </Callout>
       )}
     </div>
   );
