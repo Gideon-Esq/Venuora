@@ -10,22 +10,7 @@ import * as React from "react";
 import { DateCalendar } from "./date-calendar";
 import { ONLINE_HOLD_MINUTES } from "@/lib/holds";
 import Link from "next/link";
-import {
-  AlertTriangle,
-  Ban,
-  CalendarDays,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  Clock,
-  ImageIcon,
-  Loader2,
-  Lock,
-  Minus,
-  Plus,
-  Sparkles,
-  Zap,
-} from "lucide-react";
+import { TriangleAlert as AlertTriangle, Ban, CalendarDays, Check, CircleCheck as CheckCircle2, ChevronRight, Clock, Image as ImageIcon, Loader as Loader2, Lock, Minus, Plus, Sparkles, Zap } from "lucide-react";
 import {
   publicDayAvailability,
   publicPriceQuote,
@@ -291,6 +276,7 @@ export function BookingWizard({
   const zone = tzLabel(tz);
 
   function go(next: number) {
+    setError(null);
     setStep(next);
     requestAnimationFrame(() => {
       topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -474,6 +460,15 @@ export function BookingWizard({
   }
 
   async function pickSpace(id: string) {
+    const space = spaces.find((s) => s.id === id);
+    if (space) {
+      const capacity = Math.max(space.seatedCapacity, space.standingCapacity);
+      if (capacity > 0 && form.guestCount > capacity) {
+        setSpaceId(id);
+        setError(`${space.name} fits up to ${capacity} guests, but you entered ${form.guestCount}. Choose a larger space or go back to adjust your guest count.`);
+        return;
+      }
+    }
     setSpaceId(id);
     setError(null);
     const base = spaceQuotes[id];
