@@ -46,7 +46,10 @@ export async function sendEmail(args: {
     // Nodemailer composes MIME locally only. No SMTP connection is created.
     const composer = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: "windows" });
     const message = await composer.sendMail({ ...args, from: process.env.EMAIL_FROM!.trim(), disableFileAccess: true, disableUrlAccess: true });
-    const raw = Buffer.from(message.message).toString("base64url");
+    if (!Buffer.isBuffer(message.message)) {
+      throw new Error("Expected buffered email output from Nodemailer.");
+    }
+    const raw = message.message.toString("base64url");
     const send = () => fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
       method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ raw }), cache: "no-store", signal: AbortSignal.timeout(20_000),

@@ -1,62 +1,69 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ sendMail: vi.fn(), createTransport: vi.fn(), resendSend: vi.fn() }));
-vi.mock("nodemailer", () => ({ default: { createTransport: mocks.createTransport } }));
+const mocks = vi.hoisted(() => ({ resendSend: vi.fn() }));
 vi.mock("resend", () => ({ Resend: class { emails = { send: mocks.resendSend }; } }));
-const message = { to: "guest@example.com", subject: "Your booking", html: "<p>Hello</p>", text: "Hello", replyTo: "host@example.com" };
+const fetchMock = vi.fn();
+const message = { to: "guest@example.com", subject: "Your booking — confirmed", html: "<p>Hello</p>", text: "Hello", replyTo: "host@example.com" };
 beforeEach(() => {
   vi.resetModules();
-  for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_SECURE", "SMTP_USER", "SMTP_PASSWORD", "EMAIL_FROM", "RESEND_API_KEY"]) vi.stubEnv(key, "");
-  mocks.createTransport.mockReturnValue({ sendMail: mocks.sendMail });
-  mocks.sendMail.mockResolvedValue({ accepted: [message.to], rejected: [] });
+  for (const key of ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN", "EMAIL_FROM", "RESEND_API_KEY"]) vi.stubEnv(key, "");
+  vi.stubGlobal("fetch", fetchMock);
+  fetchMock.mockImplementation(async (url: string) => url.includes("oauth2") ? Response.json({ access_token: "access-token", expires_in: 3600 }) : Response.json({ id: "mail-1" }));
   mocks.resendSend.mockResolvedValue({ data: { id: "email-1" }, error: null });
 });
-afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
-function configureSmtp() {
-  vi.stubEnv("SMTP_HOST", "smtp.gmail.com"); vi.stubEnv("SMTP_USER", "owner@example.com");
-  vi.stubEnv("SMTP_PASSWORD", "app-password"); vi.stubEnv("EMAIL_FROM", "Venuora <owner@example.com>");
+afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+function configureGmail() {
+  vi.stubEnv("GMAIL_CLIENT_ID", "client-id"); vi.stubEnv("GMAIL_CLIENT_SECRET", "client-secret");
+  vi.stubEnv("GMAIL_REFRESH_TOKEN", "refresh-token"); vi.stubEnv("EMAIL_FROM", "Venuora <owner@example.com>");
 }
-describe("email delivery", () => {
-  it("sends HTML, text and reply-to with Gmail SMTP using STARTTLS", async () => {
-    configureSmtp();
+describe("Gmail API delivery", () => {
+  it("refreshes OAuth and sends encoded MIME with HTML, text, reply-to and a Unicode subject", async () => {
+    configureGmail();
     const { sendEmail } = await import("@/lib/email"); await sendEmail(message);
-    expect(mocks.createTransport).toHaveBeenCalledWith(expect.objectContaining({ host: "smtp.gmail.com", port: 587, secure: false, requireTLS: true, auth: { user: "owner@example.com", pass: "app-password" }, disableFileAccess: true, disableUrlAccess: true }));
-    expect(mocks.sendMail).toHaveBeenCalledWith({ ...message, from: "Venuora <owner@example.com>" });
+    expect(fetchMock.mock.calls[0][0]).toBe("https://oauth2.googleapis.com/token");
+    expect(fetchMock.mock.calls[0][1].body.get("grant_type")).toBe("refresh_token");
+    const [url, options] = fetchMock.mock.calls[1];
+    expect(url).toBe("https://gmail.googleapis.com/gmail/v1/users/me/messages/send");
+    expect(options.headers.Authorization).toBe("Bearer access-token");
+    const { raw } = JSON.parse(options.body);
+    expect(raw).toMatch(/^[A-Za-z0-9_-]+$/);
+    const mime = Buffer.from(raw, "base64url").toString();
+    expect(mime).toContain("To: guest@example.com"); expect(mime).toContain("Reply-To: host@example.com");
+    expect(mime).toContain("multipart/alternative"); expect(mime).toContain("text/html"); expect(mime).toContain("text/plain");
+    expect(mime).toContain("Hello"); expect(mime).not.toContain("client-secret");
   });
-  it("uses implicit TLS on port 465 and reuses the transporter", async () => {
-    configureSmtp(); vi.stubEnv("SMTP_PORT", "465");
-    const { sendEmail } = await import("@/lib/email"); await sendEmail(message); await sendEmail(message);
-    expect(mocks.createTransport).toHaveBeenCalledTimes(1);
-    expect(mocks.createTransport).toHaveBeenCalledWith(expect.objectContaining({ port: 465, secure: true, requireTLS: false }));
+  it("reuses a valid access token", async () => {
+    configureGmail(); const { sendEmail } = await import("@/lib/email"); await sendEmail(message); await sendEmail(message);
+    expect(fetchMock.mock.calls.filter(([url]) => url.includes("oauth2"))).toHaveLength(1);
   });
-  it("prioritizes SMTP over a configured Resend key", async () => {
-    configureSmtp(); vi.stubEnv("RESEND_API_KEY", "re_test");
-    const { sendEmail } = await import("@/lib/email"); await sendEmail(message);
-    expect(mocks.sendMail).toHaveBeenCalledTimes(1); expect(mocks.resendSend).not.toHaveBeenCalled();
+  it("shares refresh requests across concurrent sends", async () => {
+    configureGmail(); const { sendEmail } = await import("@/lib/email"); await Promise.all([sendEmail(message), sendEmail(message)]);
+    expect(fetchMock.mock.calls.filter(([url]) => url.includes("oauth2"))).toHaveLength(1);
   });
-  it("fails incomplete SMTP configuration rather than silently skipping email", async () => {
-    vi.stubEnv("SMTP_HOST", "smtp.gmail.com");
-    const { sendEmail } = await import("@/lib/email"); await expect(sendEmail(message)).rejects.toThrow("Configure SMTP_USER");
-    expect(mocks.sendMail).not.toHaveBeenCalled();
+  it("fails incomplete configuration without attempting delivery", async () => {
+    vi.stubEnv("GMAIL_CLIENT_ID", "client-id"); const { sendEmail } = await import("@/lib/email");
+    await expect(sendEmail(message)).rejects.toThrow("Configure GMAIL_CLIENT_ID"); expect(fetchMock).not.toHaveBeenCalled();
   });
-  it("propagates SMTP delivery failures without falling back", async () => {
-    configureSmtp(); mocks.sendMail.mockRejectedValueOnce(new Error("SMTP unavailable"));
-    const { sendEmail } = await import("@/lib/email"); await expect(sendEmail(message)).rejects.toThrow("SMTP unavailable");
+  it("does not disclose OAuth errors or fall back to Resend", async () => {
+    configureGmail(); vi.stubEnv("RESEND_API_KEY", "re_test"); fetchMock.mockResolvedValue(Response.json({ error: "secret details" }, { status: 400 }));
+    const { sendEmail } = await import("@/lib/email"); await expect(sendEmail(message)).rejects.toThrow("Gmail authorization failed");
     expect(mocks.resendSend).not.toHaveBeenCalled();
   });
-  it("treats rejected recipients as failures", async () => {
-    configureSmtp(); mocks.sendMail.mockResolvedValueOnce({ accepted: [], rejected: [message.to] });
-    const { sendEmail } = await import("@/lib/email"); await expect(sendEmail(message)).rejects.toThrow("rejected");
+  it("refreshes and retries once on a rejected access token", async () => {
+    configureGmail(); fetchMock.mockResolvedValueOnce(Response.json({ access_token: "old", expires_in: 3600 })).mockResolvedValueOnce(new Response(null, { status: 401 })).mockResolvedValueOnce(Response.json({ access_token: "new", expires_in: 3600 })).mockResolvedValueOnce(Response.json({ id: "sent" }));
+    const { sendEmail } = await import("@/lib/email"); await sendEmail(message); expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock.mock.calls[3][1].headers.Authorization).toBe("Bearer new");
   });
-  it("preserves Resend delivery when SMTP is absent", async () => {
-    vi.stubEnv("RESEND_API_KEY", "re_test");
-    const { sendEmail } = await import("@/lib/email"); await sendEmail(message);
-    expect(mocks.resendSend).toHaveBeenCalledWith(expect.objectContaining({ ...message, from: "Venuora <onboarding@resend.dev>" }));
-    expect(mocks.sendMail).not.toHaveBeenCalled();
+  it("does not retry ambiguous sending failures", async () => {
+    configureGmail(); fetchMock.mockResolvedValueOnce(Response.json({ access_token: "token", expires_in: 3600 })).mockResolvedValueOnce(new Response(null, { status: 500 }));
+    const { sendEmail } = await import("@/lib/email"); await expect(sendEmail(message)).rejects.toThrow("Gmail API delivery failed (500)"); expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+  it("preserves Resend when Gmail is absent", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test"); const { sendEmail } = await import("@/lib/email"); await sendEmail(message);
+    expect(mocks.resendSend).toHaveBeenCalledWith(expect.objectContaining(message)); expect(fetchMock).not.toHaveBeenCalled();
   });
   it("keeps unconfigured local development in console mode", async () => {
-    vi.stubEnv("RESEND_API_KEY", "re_placeholder");
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.stubEnv("RESEND_API_KEY", "re_placeholder"); const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const { sendEmail, emailTransport } = await import("@/lib/email"); await sendEmail(message);
-    expect(emailTransport()).toBe("console"); expect(log).toHaveBeenCalled(); expect(mocks.sendMail).not.toHaveBeenCalled();
+    expect(emailTransport()).toBe("console"); expect(log).toHaveBeenCalled(); expect(fetchMock).not.toHaveBeenCalled();
   });
 });

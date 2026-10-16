@@ -1,0 +1,47 @@
+.page { flex: 1; padding: 0 clamp(20px, 5vw, 88px); }
+.page a { outline-offset: 5px; }
+.page a:focus-visible { outline: 2px solid var(--primary); }
+.header { min-height: 110px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand { display: inline-flex; align-items: center; gap: 7px; font-size: 29px; font-weight: 600; letter-spacing: -1.7px; }
+.brand svg { color: var(--primary); }
+.brand > span { align-self: flex-start; padding-top: 9px; font-size: 10px; letter-spacing: 0; }
+.back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 12px; color: var(--muted-foreground); }
+.back:hover, .textLink:hover { color: var(--primary); }
+.main { max-width: 1440px; margin: 10px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(36px, 6vw, 100px); align-items: center; }
+.message { padding: 30px 0; }
+.eyebrow { display: flex; align-items: center; gap: 9px; font-size: 9px; letter-spacing: .17em; font-weight: 600; color: var(--primary); line-height: 1.8; }
+.eyebrow > span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.mailIcon { position: relative; display: grid; place-items: center; width: 66px; height: 66px; background: var(--accent); color: var(--primary); border-radius: 22px; margin-top: 34px; transform: rotate(-7deg); }
+.mailFlower { position: absolute; right: -9px; bottom: -5px; background: var(--background); border-radius: 50%; padding: 3px; box-sizing: content-box; }
+.message h1 { font: 400 clamp(46px, 5.2vw, 80px)/1.04 Georgia, 'Times New Roman', serif; letter-spacing: -.055em; margin: 25px 0 22px; }
+.message h1 em { color: var(--primary); font-weight: 400; }
+.intro { max-width: 365px; color: var(--muted-foreground); font-size: 14px; line-height: 1.9; }
+.recipient { display: flex; align-items: center; gap: 15px; padding: 19px 0; margin: 22px 0 26px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); max-width: 410px; color: var(--primary); }
+.recipient > div { min-width: 0; }
+.recipient > svg { flex-shrink: 0; }
+.recipient span { display: block; font-size: 8px; letter-spacing: .13em; color: var(--muted-foreground); }
+.recipient p { font-size: 14px; color: var(--foreground); margin-top: 5px; overflow-wrap: anywhere; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 22px; margin-top: 26px; }
+.primary { border-radius: 999px; height: 49px; gap: 24px; font-size: 12px; }
+.textLink { padding: 12px 0; font-size: 11px; text-decoration: underline; text-underline-offset: 5px; }
+.secure { display: flex; gap: 7px; align-items: center; font-size: 10px; color: var(--muted-foreground); margin-top: 22px; }
+.visual { position: relative; align-self: stretch; min-height: 620px; overflow: hidden; border-radius: 180px 180px 5px 5px; color: #fffdf5; background: #29263f; }
+.photo { object-fit: cover; }
+.shade { position: absolute; inset: 0; background: linear-gradient(180deg, #1b1a2240 0%, #1b1a2200 35%, #1b1a22c9 100%); }
+.photoTop { position: absolute; top: 92px; left: 35px; right: 35px; display: flex; align-items: center; justify-content: center; gap: 15px; font-size: 8px; letter-spacing: .17em; }
+.photoCopy { position: absolute; bottom: 95px; left: 9%; right: 8%; }
+.photoCopy p { font: 400 clamp(32px, 3.3vw, 49px)/1.13 Georgia, serif; letter-spacing: -.04em; }
+.photoCopy > span { display: block; margin-top: 20px; font-size: 11px; line-height: 1.7; color: #f9f7f0d9; }
+.photoBottom { position: absolute; bottom: 27px; left: 9%; right: 9%; border-top: 1px solid #ffffff4d; padding-top: 18px; display: flex; justify-content: space-between; gap: 15px; font-size: 7px; letter-spacing: .11em; }
+.guide { max-width: 1440px; margin: 65px auto 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 38px 0; display: grid; grid-template-columns: 1fr 2fr; gap: 40px; }
+.guideHeading h2 { font: 400 34px/1.15 Georgia, serif; letter-spacing: -.04em; margin-top: 13px; }
+.steps { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; padding: 0; margin: 0; }
+.number { font-size: 10px; color: var(--primary); }
+.steps h3 { margin-top: 13px; font-size: 13px; font-weight: 500; }
+.steps p { color: var(--muted-foreground); font-size: 11px; line-height: 1.8; margin-top: 8px; max-width: 220px; }
+.footer { max-width: 1440px; margin: auto; padding: 25px 0 30px; display: flex; justify-content: space-between; gap: 20px; font-size: 10px; line-height: 1.9; color: var(--muted-foreground); }
+.footer a { display: inline-flex; align-items: center; gap: 4px; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+@media (min-width: 1600px) { .header { max-width: 1440px; margin: auto; } }
+@media (max-width: 1050px) { .main { gap: 35px; } .visual { min-height: 590px; border-radius: 130px 130px 5px 5px; } .guide { grid-template-columns: 1fr; gap: 28px; } }
+@media (max-width: 800px) { .header { min-height: 85px; } .brand { font-size: 26px; } .main { grid-template-columns: 1fr; gap: 30px; margin-top: 0; } .message { padding: 20px 0 0; } .message h1 { font-size: clamp(48px, 9vw, 72px); } .intro { max-width: 440px; } .recipient { max-width: 100%; } .mailIcon { margin-top: 24px; } .visual { min-height: 370px; border-radius: 100px 100px 5px 5px; } .photoTop { top: 40px; } .photoCopy { bottom: 85px; } .photoCopy p { font-size: 37px; } .guide { margin-top: 40px; padding: 30px 0; } .footer { flex-direction: column; gap: 10px; } }
+@media (max-width: 480px) { .steps { grid-template-columns: 1fr; gap: 21px; } .steps li { display: grid; grid-template-columns: 25px 1fr; column-gap: 10px; } .number { grid-row: span 2; padding-top: 2px; } .steps h3 { margin-top: 0; } .steps p { max-width: 100%; margin-top: 5px; } .back { gap: 6px; font-size: 10px; } .actions { gap: 14px; } .visual { min-height: 350px; } .photoCopy p { font-size: 32px; } .photoBottom { font-size: 6px; } }

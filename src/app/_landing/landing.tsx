@@ -74,8 +74,11 @@ export function Landing() {
       frame = 0;
       const viewport = window.innerHeight;
       const scroll = window.scrollY;
+      const maxScroll = document.documentElement.scrollHeight - viewport;
       for (const item of animations) {
-        const progress = Math.max(0, Math.min(1, (scroll + viewport * .96 - item.top - item.stagger) / (viewport * .42)));
+        const end = Math.min(item.top + item.stagger - viewport * .54, maxScroll);
+        const start = Math.min(item.top + item.stagger - viewport * .96, end - 1);
+        const progress = Math.max(0, Math.min(1, (scroll - start) / (end - start)));
         item.animation.currentTime = item.element.contains(document.activeElement) ? 1000 : progress * 1000;
       }
     };

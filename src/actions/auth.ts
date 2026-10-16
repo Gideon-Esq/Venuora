@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/lib/auth";
 import { registerSchema } from "@/lib/validators";
+import { emailTransport } from "@/lib/email";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -59,8 +60,11 @@ export async function passwordSignInAction(formData: FormData): Promise<ActionRe
 export async function magicLinkAction(formData: FormData): Promise<ActionResult> {
   const email = String(formData.get("email") ?? "").toLowerCase().trim();
   if (!email.includes("@")) return { ok: false, error: "Enter a valid email" };
+  if (process.env.NODE_ENV === "production" && emailTransport() === "console") {
+    return { ok: false, error: "Email sign-in is not configured yet. Use your password or contact support." };
+  }
   try {
-    await signIn("resend", { email, redirect: false });
+    await signIn("resend", { email, redirect: false, redirectTo: "/app" });
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, error: "Could not send the magic link" };
     throw err;

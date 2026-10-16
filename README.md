@@ -133,7 +133,7 @@ then restart locally or redeploy. See [the setup and verification guide](docs/ve
 
 ## Email delivery
 
-Nodemailer SMTP is available for booking emails and sign-in links. Fill `SMTP_HOST`,
-`SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `EMAIL_FROM` in `.env`.
-See [SMTP setup](docs/smtp-email-setup.md). Without SMTP, existing Resend / local
-console delivery remains available.
+Booking emails and sign-in links use the Gmail API with server-only OAuth settings:
+`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, and `EMAIL_FROM`.
+Follow [Gmail API setup](docs/gmail-api-setup.md). With no Gmail credentials,
+existing Resend / local console delivery remains available. SMTP is not used.

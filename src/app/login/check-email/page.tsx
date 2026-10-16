@@ -1,79 +1,65 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { Clock, Mail } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Flower2, Mail, ShieldCheck } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AuthShell, textLink } from "../auth-shell";
+import { emailTransport } from "@/lib/email";
+import styles from "./check-email.module.css";
 
 export const metadata: Metadata = { title: "Check your inbox" };
 
 const STEPS = [
-  { title: "Open the email", body: "Find the sign-in email from Venuora." },
-  { title: "Tap the secure link", body: "Use the link inside the email to sign in." },
-  { title: "You’ll return to Venuora", body: "Your workspace will open automatically." },
+  { title: "Find your email", body: "Look for the sign-in email from Venuora. Check spam or promotions too." },
+  { title: "Follow the link", body: "Open the secure sign-in link on this device." },
+  { title: "Make yourself at home", body: "Your venue workspace is ready when you are." },
 ];
 
-export default async function CheckEmailPage({searchParams}: {searchParams: Promise<{email?:string}>}) {
-  const {email} = await searchParams;
+export default async function CheckEmailPage({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
+  const { email } = await searchParams;
+  const consoleMode = emailTransport() === "console";
+  const steps = consoleMode ? [
+    { title: "Check the server console", body: "Find the Venuora magic-link message in your development terminal." },
+    { title: "Open your local link", body: "Copy the complete sign-in link into this browser." },
+    { title: "Welcome to your workspace", body: "The link signs you in and opens your venue workspace." },
+  ] : STEPS;
+
   return (
-    <AuthShell>
-      <div className="text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-accent text-accent-foreground">
-          <Mail className="h-9 w-9" aria-hidden />
-        </div>
-        <h1 className="mt-6 text-3xl font-semibold tracking-tight text-foreground">
-          Check your inbox
-        </h1>
-        <p className="mx-auto mt-3 max-w-sm text-pretty leading-7 text-muted-foreground">
-          We sent a sign-in link{email ? ` to ${email.slice(0,254)}` : " to your email"}. Open it on this device to continue.
-        </p>
-      </div>
+    <div className={cn("public-page", styles.page)}>
+      <header className={styles.header}>
+        <Link href="/" aria-label="Venuora home" className={styles.brand}><Flower2 size={29} strokeWidth={1.6} aria-hidden />venuora<span>®</span></Link>
+        <Link href="/login" className={styles.back}><ArrowLeft size={16} aria-hidden /><span>Back to sign in</span></Link>
+      </header>
 
-      <ol className="mt-8 rounded-xl border border-border bg-card p-6 shadow-sm">
-        {STEPS.map((s, i) => (
-          <li key={s.title} className="relative flex gap-4 pb-6 last:pb-0">
-            {i < STEPS.length - 1 && (
-              <span aria-hidden className="absolute left-[13px] top-8 bottom-1 w-px bg-border" />
-            )}
-            <span
-              aria-hidden
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
-            >
-              {i + 1}
-            </span>
-            <div>
-              <p className="font-medium text-foreground">{s.title}</p>
-              <p className="mt-0.5 text-sm leading-6 text-muted-foreground">{s.body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <main className={styles.main}>
+        <section className={styles.message} aria-labelledby="check-email-title">
+          <div className={styles.eyebrow}><span /> YOUR NEXT CHAPTER STARTS HERE</div>
+          <div className={styles.mailIcon}><Mail size={28} strokeWidth={1.4} aria-hidden /><Flower2 className={styles.mailFlower} size={25} aria-hidden /></div>
+          <h1 id="check-email-title">{consoleMode ? <>A little link.<br /><em>A fresh start.</em></> : <>Good things<br />are <em>in your inbox.</em></>}</h1>
+          <p className={styles.intro}>{consoleMode ? "Your local sign-in link is waiting in the development server console. No email was sent." : "Your next event, your next enquiry, your next big moment. Your sign-in link is the way back to it all."}</p>
+          {!consoleMode && <div className={styles.recipient}><Mail size={17} aria-hidden /><div><span>SIGN-IN EMAIL REQUESTED FOR</span><p>{email?.slice(0, 254) || "Your email address"}</p></div></div>}
+          <div className={styles.actions}>
+            <Link href="/login" className={cn(buttonVariants({ size: "lg" }), styles.primary)}>Return to sign in <ArrowUpRight size={18} aria-hidden /></Link>
+            <Link href="/login" className={styles.textLink}>Use a different email</Link>
+          </div>
+          <p className={styles.secure}><ShieldCheck size={16} aria-hidden /> A secure link. A simple way in.</p>
+        </section>
 
-      <p className="mt-6 text-center text-sm leading-6 text-muted-foreground">
-        It can take a minute. Check spam or promotions if you don&apos;t see it.
-      </p>
+        <aside className={styles.visual} aria-label="A little inspiration while you wait">
+          <Image src="/landing/reception-ready.webp" alt="A candlelit reception venue with flowers and tables prepared for a celebration" fill sizes="(max-width: 800px) 100vw, 50vw" priority className={styles.photo} />
+          <div className={styles.shade} />
+          <div className={styles.photoTop}><span>ROOM FOR WHAT MATTERS</span><Flower2 size={26} strokeWidth={1.2} aria-hidden /></div>
+          <div className={styles.photoCopy}><p>Less busywork.<br /><em>More beautiful moments.</em></p><span>A little clarity for the people behind the place.</span></div>
+          <div className={styles.photoBottom}><span>YOUR VENUE. ALL TOGETHER.</span><span>01 / THE NEXT CHAPTER</span></div>
+        </aside>
+      </main>
 
-      <div className="mt-8 flex flex-col items-center gap-4">
-        <Link href="/login" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
-          Back to sign in
-        </Link>
-        <Link href="/login" className={cn(textLink, "text-sm")}>
-          Use a different email
-        </Link>
-      </div>
+      <section className={styles.guide} aria-labelledby="next-steps-title">
+        <div className={styles.guideHeading}><p className={styles.eyebrow}>JUST A FEW LITTLE STEPS</p><h2 id="next-steps-title">You’re almost <em>there.</em></h2></div>
+        <ol className={styles.steps}>{steps.map((step, index) => <li key={step.title}><span className={styles.number}>0{index + 1}</span><h3>{step.title}</h3><p>{step.body}</p></li>)}</ol>
+      </section>
 
-      <div className="mt-10 rounded-xl border border-border bg-card p-5">
-        <h2 className="flex items-center gap-2 font-semibold text-foreground">
-          <Clock className="h-4 w-4 text-muted-foreground" aria-hidden />
-          Link expired?
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Return to sign in and request a new sign-in link.
-        </p>
-        <Link href="/login" className={cn(textLink, "mt-3 inline-block text-sm")}>
-          Return to sign in
-        </Link>
-      </div>
-    </AuthShell>
+      <footer className={styles.footer}><p>{consoleMode ? "Configure email delivery to receive future links by email." : "Still waiting, or has your link expired?"} <Link href="/login">Request a new link <ArrowUpRight size={13} aria-hidden /></Link></p><span>A place for every unforgettable moment.</span></footer>
+    </div>
   );
 }
